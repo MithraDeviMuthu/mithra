@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Policy Analytics Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ------------------------------------------------------------ tokens */
+:root {
+  color-scheme: light;
+  --page:#f2f2ef; --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --ink-3:#6b6a66;
+  --line:#e3e2de; --grid:#ecebe7;
+  --series:#2a78d6; --series-hover:#1c5cab; --on-series:#ffffff;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+  --font-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body:"Public Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page:#121211; --surface:#1a1a19; --ink:#f0efec; --ink-2:#c3c2b7; --ink-3:#a3a298;
+    --line:#2e2e2c; --grid:#262624;
+    --series:#3987e5; --series-hover:#5598e7; --on-series:#0b0b0b;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page:#121211; --surface:#1a1a19; --ink:#f0efec; --ink-2:#c3c2b7; --ink-3:#a3a298;
+  --line:#2e2e2c; --grid:#262624;
+  --series:#3987e5; --series-hover:#5598e7; --on-series:#0b0b0b;
+}
+
+/* -------------------------------------------------------------- base */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin:0; background:var(--page); color:var(--ink); font:15px/1.5 var(--font-body); }
+h1, h2, h3 { font-family:var(--font-display); font-weight:600; margin:0; letter-spacing:-0.01em; }
+p { margin:0; }
+button, input, select { font:inherit; color:inherit; }
+:focus-visible { outline:2px solid var(--series); outline-offset:2px; border-radius:4px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------ layout */
+.app { display:grid; grid-template-columns:232px minmax(0,1fr); min-height:100vh; }
+.rail { position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:28px;
+        padding:24px 16px; background:var(--surface); border-right:1px solid var(--line); }
+.brand { font-family:var(--font-display); font-weight:600; font-size:19px; line-height:1.2; padding:0 8px; }
+.brand small { display:block; margin-top:4px; font:400 13px/1.4 var(--font-body); color:var(--ink-3); }
+.nav { display:flex; flex-direction:column; gap:2px; }
+.nav a { display:block; padding:9px 12px; border-radius:6px; color:var(--ink-2); text-decoration:none;
+         border-left:3px solid transparent; }
+.nav a:hover { background:var(--page); color:var(--ink); }
+.nav a[aria-current="page"] { color:var(--ink); font-weight:600; border-left-color:var(--series); background:var(--page); }
+.rail-foot { margin-top:auto; padding:0 8px; display:flex; flex-direction:column; gap:10px; font-size:13px; color:var(--ink-3); }
+.linkbtn { background:none; border:0; padding:0; color:var(--ink-2); cursor:pointer; text-align:left; text-decoration:underline; text-underline-offset:3px; }
+.main { padding:32px clamp(16px,4vw,48px) 56px; max-width:1180px; width:100%; }
+.view[hidden] { display:none; }
+.view-head { margin-bottom:24px; }
+.view-head h1 { font-size:clamp(24px,3.2vw,32px); line-height:1.15; }
+.view-head p { margin-top:8px; color:var(--ink-2); max-width:64ch; }
+
+.panel { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:20px; }
+.grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr)); gap:16px; margin-top:16px; }
+
+/* --------------------------------------------------------------- KPIs */
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); padding:0; overflow:hidden; }
+.kpi { padding:18px 20px; border-left:1px solid var(--line); }
+.kpi:first-child { border-left:0; }
+.kpi-label { color:var(--ink-2); font-size:14px; }
+.kpi-value { font:600 30px/1.2 var(--font-display); margin-top:4px; font-variant-numeric:tabular-nums; }
+.kpi-sub { color:var(--ink-3); font-size:13px; margin-top:2px; }
+
+/* --------------------------------------------------------- chart card */
+.card-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:14px; }
+.card-head h3 { font-size:17px; }
+.takeaway { color:var(--ink-2); font-size:14px; margin-top:4px; max-width:52ch; }
+.toggle { flex:none; background:none; border:1px solid var(--line); color:var(--ink-2); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:13px; }
+.toggle:hover { color:var(--ink); border-color:var(--ink-3); }
+.note { margin-top:12px; font-size:13px; color:var(--ink-3); display:flex; align-items:center; gap:8px; }
+.dash { display:inline-block; width:18px; border-top:2px dashed var(--ink-3); }
+
+/* horizontal bars */
+.hrow { display:grid; grid-template-columns:minmax(96px,34%) minmax(0,1fr) 54px; align-items:center; gap:12px; padding:5px 4px; border-radius:6px; }
+.hrow:hover { background:var(--page); }
+.hlabel { font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.htrack { position:relative; height:16px; border-left:1px solid var(--ink-3); }
+.hfill { display:block; height:100%; background:var(--series); border-radius:0 4px 4px 0; }
+.hrow:hover .hfill, .hrow:focus-visible .hfill { background:var(--series-hover); }
+.htick { position:absolute; top:-6px; bottom:-6px; border-left:2px dashed var(--ink-3); opacity:.8; }
+.hval { text-align:right; font-variant-numeric:tabular-nums; font-size:14px; }
+
+/* column bars */
+.vwrap { padding-top:18px; }
+.vplot { position:relative; height:190px; margin-left:42px; border-bottom:1px solid var(--ink-3); }
+.vgrid { position:absolute; left:0; right:0; border-top:1px solid var(--grid); }
+.vtick { position:absolute; left:-42px; width:34px; text-align:right; font-size:12px; color:var(--ink-3); transform:translateY(50%); font-variant-numeric:tabular-nums; }
+.vcols { position:absolute; inset:0; display:flex; justify-content:space-around; }
+.vcol { position:relative; flex:1 1 0; max-width:64px; margin:0 5px; height:100%; display:flex; align-items:flex-end; border-radius:4px 4px 0 0; }
+.vfill { display:block; width:100%; background:var(--series); border-radius:4px 4px 0 0; }
+.vcol:hover .vfill, .vcol:focus-visible .vfill { background:var(--series-hover); }
+.vcol:hover { background:color-mix(in srgb, var(--ink) 4%, transparent); }
+.vval { position:absolute; left:-10px; right:-10px; text-align:center; font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums; pointer-events:none; }
+.vref { position:absolute; left:0; right:0; border-top:2px dashed var(--ink-3); opacity:.8; pointer-events:none; }
+.vlabels { display:flex; justify-content:space-around; margin:6px 0 0 42px; }
+.vlabels span { flex:1 1 0; max-width:64px; margin:0 5px; text-align:center; font-size:12.5px; color:var(--ink-2); }
+
+/* line chart */
+.line-host svg { display:block; width:100%; height:auto; overflow:visible; }
+.line-host text { font:12px var(--font-body); fill:var(--ink-3); }
+
+/* tables */
+.tablewrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th { text-align:left; font-weight:500; color:var(--ink-2); padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+td { padding:9px 10px; border-bottom:1px solid var(--grid); white-space:nowrap; }
+th.r, td.r { text-align:right; font-variant-numeric:tabular-nums; }
+tbody tr:hover { background:var(--page); }
+.cellbar { display:inline-flex; align-items:center; gap:8px; justify-content:flex-end; }
+.cellbar i { display:block; width:64px; height:8px; background:var(--grid); border-radius:4px; overflow:hidden; text-align:left; }
+.cellbar b { display:block; height:100%; border-radius:0 4px 4px 0; }
+
+/* risk badges (status colour always paired with icon + label) */
+.badge { --c:var(--good); display:inline-flex; align-items:center; gap:6px; padding:2px 10px 2px 8px; border-radius:999px; font-size:13px; font-weight:600;
+         background:color-mix(in srgb, var(--c) 14%, var(--surface)); border:1px solid color-mix(in srgb, var(--c) 45%, var(--surface)); }
+.badge i { color:var(--c); font-style:normal; font-size:11px; }
+.badge.high { --c:var(--crit); } .badge.medium { --c:var(--warn); } .badge.low { --c:var(--good); }
+
+/* --------------------------------------------------- claim checker */
+.checker { display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,380px); gap:16px; align-items:start; }
+.fieldset { border:0; margin:0 0 18px; padding:0; }
+.fieldset legend { font:600 15px var(--font-display); padding:0; margin-bottom:10px; }
+.fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
+.field label { display:block; font-size:13px; color:var(--ink-2); margin-bottom:4px; }
+.field input, .field select { width:100%; height:38px; padding:0 10px; background:var(--surface); border:1px solid var(--line); border-radius:6px; }
+.field input:hover, .field select:hover { border-color:var(--ink-3); }
+.actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
+.btn { height:38px; padding:0 16px; border-radius:6px; border:1px solid var(--line); background:var(--surface); cursor:pointer; font-weight:500; }
+.btn:hover { border-color:var(--ink-3); }
+.btn.primary { background:var(--series); border-color:var(--series); color:var(--on-series); }
+.btn.primary:hover { background:var(--series-hover); border-color:var(--series-hover); }
+.result { position:sticky; top:24px; }
+.result h2 { font-size:17px; }
+.score { display:flex; align-items:center; gap:14px; margin:14px 0 4px; flex-wrap:wrap; }
+.score-num { font:600 56px/1 var(--font-display); font-variant-numeric:tabular-nums; }
+.meter { position:relative; margin-top:34px; }
+.meter-track { height:14px; background:var(--grid); border-radius:7px; overflow:hidden; }
+.meter-fill { height:100%; width:0; border-radius:7px 0 0 7px; transition:width .45s ease; }
+.meter-tick { position:absolute; top:-8px; bottom:-8px; width:0; border-left:2px solid var(--ink); }
+.meter-tick span { position:absolute; bottom:100%; left:0; transform:translateX(-50%); margin-bottom:3px; font-size:12.5px; font-weight:600; white-space:nowrap; }
+.scale { display:flex; justify-content:space-between; margin-top:6px; font-size:12px; color:var(--ink-3); }
+.verdict { margin-top:16px; color:var(--ink-2); }
+.labelnote { margin-top:14px; padding-top:14px; border-top:1px solid var(--line); font-size:14px; color:var(--ink-2); }
+.hint { font-size:13px; color:var(--ink-3); margin-top:14px; }
+
+/* ------------------------------------------------------------- misc */
+.tip { position:fixed; z-index:50; display:none; pointer-events:none; max-width:260px; padding:8px 10px; border-radius:6px; font-size:13px; line-height:1.4;
+       background:var(--ink); color:var(--page); box-shadow:0 4px 14px rgba(0,0,0,.18); }
+.tip b { font-weight:600; }
+.banner { padding:14px 16px; border-radius:8px; border:1px solid color-mix(in srgb, var(--crit) 45%, var(--surface)); background:color-mix(in srgb, var(--crit) 10%, var(--surface)); margin-bottom:16px; }
+.banner code { font-family:ui-monospace, Consolas, monospace; font-size:13px; }
+.footnote { margin-top:14px; font-size:13px; color:var(--ink-3); max-width:80ch; }
+.rowctl { display:flex; align-items:center; gap:10px; margin-bottom:12px; font-size:14px; color:var(--ink-2); }
+.rowctl select { height:34px; padding:0 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
+
+/* ---------------------------------------------------------- responsive */
+@media (max-width: 900px) {
+  .app { grid-template-columns:1fr; }
+  .rail { position:static; height:auto; flex-direction:row; flex-wrap:wrap; align-items:center; gap:8px 16px; padding:12px 16px; border-right:0; border-bottom:1px solid var(--line); }
+  .brand small { display:none; }
+  .nav { flex-direction:row; flex-wrap:wrap; order:3; width:100%; }
+  .nav a { border-left:0; border-bottom:3px solid transparent; border-radius:6px 6px 0 0; padding:8px 10px; }
+  .nav a[aria-current="page"] { border-bottom-color:var(--series); }
+  .rail-foot { margin:0 0 0 auto; flex-direction:row; gap:14px; align-items:center; }
+  .rail-foot .synthetic { display:none; }
+  .checker { grid-template-columns:1fr; }
+  .result { position:static; }
+}
+@media (max-width: 560px) {
+  .hrow { grid-template-columns:minmax(0,40%) minmax(0,1fr) 46px; gap:8px; }
+  .hlabel { white-space:normal; line-height:1.25; }
+  .card-head { flex-direction:column; }
+}
+@media (prefers-reduced-motion: reduce) { .meter-fill { transition:none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">Policy Analytics<small>Health claims fraud console</small></div>
+    <nav class="nav" aria-label="Sections">
+      <a href="#overview" data-view="overview">Overview</a>
+      <a href="#check" data-view="check">Check a claim</a>
+      <a href="#claims" data-view="claims">Suspicious claims</a>
+      <a href="#patterns" data-view="patterns">Patterns</a>
+    </nav>
+    <div class="rail-foot">
+      <span class="synthetic">Synthetic dataset. Results show the method, not real-world fraud rates.</span>
+      <button class="linkbtn" id="theme-btn" type="button">Switch theme</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="banner"></div>
+
+    <!-- ===================================================== overview -->
+    <section class="view" id="view-overview" hidden>
+      <div class="view-head">
+        <h1 id="ov-title">Where fraud concentrates</h1>
+        <p id="ov-sub">Share of claims labelled fraudulent, broken down by who provides the care.</p>
+      </div>
+      <div class="panel kpis" id="kpis"></div>
+      <div class="grid2" id="ov-grid"></div>
+    </section>
+
+    <!-- ================================================ claim checker -->
+    <section class="view" id="view-check" hidden>
+      <div class="view-head">
+        <h1>Check a claim</h1>
+        <p>Enter a claim, or load a real one the model never saw, and it returns the chance the claim is fraudulent. Anything you leave blank is filled in with a typical value.</p>
+      </div>
+      <div class="checker">
+        <form class="panel" id="claim-form" autocomplete="off"></form>
+        <aside class="panel result" aria-live="polite" id="result">
+          <h2>Model result</h2>
+          <p class="hint">Fill in the claim and select Score claim.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============================================== suspicious claims -->
+    <section class="view" id="view-claims" hidden>
+      <div class="view-head">
+        <h1>Suspicious claims</h1>
+        <p id="claims-sub">The claims the model scores as most likely to be fraud.</p>
+      </div>
+      <div class="panel">
+        <div class="rowctl">
+          <label for="scope">Claims</label>
+          <select id="scope">
+            <option value="test">Held-out test claims</option>
+            <option value="all">All claims</option>
+          </select>
+          <label for="limit">Show the top</label>
+          <select id="limit"><option>25</option><option>50</option><option>100</option></select>
+        </div>
+        <div class="tablewrap" id="claims-table"></div>
+        <p class="footnote" id="claims-note"></p>
+      </div>
+    </section>
+
+    <!-- ===================================================== patterns -->
+    <section class="view" id="view-patterns" hidden>
+      <div class="view-head">
+        <h1>Patterns behind the fraud flags</h1>
+        <p>Fraud rate across claim size, procedures, distance and patient age. Wide gaps between bars are what the model learns from.</p>
+      </div>
+      <div class="grid2" id="pat-grid" style="margin-top:0"></div>
+    </section>
+  </main>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+"use strict";
+/* ----------------------------------------------------------- helpers */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const pct = (x, d = 1) => (x * 100).toFixed(d) + "%";
+const compact = n => new Intl.NumberFormat("en", { notation:"compact", maximumFractionDigits:2 }).format(n);
+const whole = n => new Intl.NumberFormat("en").format(n);
+
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+const state = { stats:null, threshold:0.3, options:null, base:{}, labelled:null, rendered:{} };
+
+/* ------------------------------------------------------------ tooltip */
+const tip = $("#tip");
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.max(8, Math.min(x + 12, innerWidth - w - 8)) + "px";
+  tip.style.top = (y - h - 12 < 8 ? y + 18 : y - h - 12) + "px";
+}
+const hideTip = () => { tip.style.display = "none"; };
+function bindTip(el, html) {
+  el.addEventListener("mousemove", e => showTip(html, e.clientX, e.clientY));
+  el.addEventListener("mouseleave", hideTip);
+  el.addEventListener("focus", () => { const r = el.getBoundingClientRect(); showTip(html, r.left + r.width / 2, r.top); });
+  el.addEventListener("blur", hideTip);
+}
+const rowTip = r => `<b>${esc(r.label)}</b><br>${pct(r.rate)} fraud<br>${whole(Math.round(r.rate * r.n))} of ${whole(r.n)} claims`;
+
+/* -------------------------------------------------------- chart parts */
+function niceMax(v) {
+  const steps = [0.05, 0.1, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1];
+  return steps.find(s => s >= v * 1.05) || 1;
+}
+
+function hbar(host, rows, ref) {
+  const max = Math.max(...rows.map(r => r.rate), ref) * 1.12;
+  host.innerHTML = rows.map((r, i) => `
+    <div class="hrow" tabindex="0" data-i="${i}">
+      <span class="hlabel" title="${esc(r.label)}">${esc(r.label)}</span>
+      <span class="htrack"><span class="hfill" style="width:${(r.rate / max * 100).toFixed(2)}%"></span>
+        <span class="htick" style="left:${(ref / max * 100).toFixed(2)}%"></span></span>
+      <span class="hval">${pct(r.rate)}</span>
+    </div>`).join("") +
+    `<p class="note"><span class="dash"></span>Overall rate ${pct(ref)}</p>`;
+  host.querySelectorAll(".hrow").forEach(el => bindTip(el, rowTip(rows[+el.dataset.i])));
+}
+
+function vbar(host, rows, ref) {
+  const max = niceMax(Math.max(...rows.map(r => r.rate), ref));
+  const peak = rows.reduce((a, b) => (b.rate > a.rate ? b : a));
+  const ticks = [0, max / 2, max];
+  host.innerHTML = `<div class="vwrap"><div class="vplot">
+      ${ticks.map(t => `<div class="vgrid" style="bottom:${t / max * 100}%"></div><span class="vtick" style="bottom:${t / max * 100}%">${pct(t, 0)}</span>`).join("")}
+      <div class="vref" style="bottom:${ref / max * 100}%"></div>
+      <div class="vcols">${rows.map((r, i) => `
+        <div class="vcol" tabindex="0" data-i="${i}">
+          <span class="vfill" style="height:${(r.rate / max * 100).toFixed(2)}%"></span>
+          ${r === peak ? `<span class="vval" style="bottom:calc(${(r.rate / max * 100).toFixed(2)}% + 4px)">${pct(r.rate)}</span>` : ""}
+        </div>`).join("")}</div>
+    </div>
+    <div class="vlabels">${rows.map(r => `<span>${esc(r.label)}</span>`).join("")}</div></div>
+    <p class="note"><span class="dash"></span>Overall rate ${pct(ref)}</p>`;
+  host.querySelectorAll(".vcol").forEach(el => bindTip(el, rowTip(rows[+el.dataset.i])));
+}
+
+function lineChart(host, rows, ref) {
+  const W = host.clientWidth || 600, H = 230, m = { l:44, r:14, t:14, b:30 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const max = niceMax(Math.max(...rows.map(r => r.rate), ref));
+  const x = i => m.l + (rows.length === 1 ? iw / 2 : i * iw / (rows.length - 1));
+  const y = v => m.t + ih - v / max * ih;
+  const path = rows.map((r, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(r.rate).toFixed(1)}`).join(" ");
+  const xl = rows.map((r, i) => r.label.endsWith("Q1") ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${r.label.slice(0, 4)}</text>` : "").join("");
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Fraud rate by quarter">
+    ${[0, max / 2, max].map(t => `<line x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${pct(t, 0)}</text>`).join("")}
+    <line x1="${m.l}" x2="${W - m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--ink-3)"/>
+    <line x1="${m.l}" x2="${W - m.r}" y1="${y(ref)}" y2="${y(ref)}" stroke="var(--ink-3)" stroke-width="2" stroke-dasharray="5 4" opacity=".8"/>
+    ${xl}
+    <path d="${path}" fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <g id="cur" style="display:none"><line y1="${m.t}" y2="${m.t + ih}" stroke="var(--ink-3)"/><circle r="5" fill="var(--series)" stroke="var(--surface)" stroke-width="2"/></g>
+    <rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" id="hit"/></svg>
+    <p class="note"><span class="dash"></span>Overall rate ${pct(ref)}</p>`;
+  const svg = host.querySelector("svg"), cur = svg.querySelector("#cur");
+  const hit = svg.querySelector("#hit");
+  hit.addEventListener("mousemove", e => {
+    const b = svg.getBoundingClientRect();
+    const i = Math.max(0, Math.min(rows.length - 1, Math.round(((e.clientX - b.left) - m.l) / iw * (rows.length - 1))));
+    cur.style.display = "";
+    cur.querySelector("line").setAttribute("x1", x(i)); cur.querySelector("line").setAttribute("x2", x(i));
+    cur.querySelector("circle").setAttribute("cx", x(i)); cur.querySelector("circle").setAttribute("cy", y(rows[i].rate));
+    showTip(rowTip(rows[i]), e.clientX, e.clientY);
+  });
+  hit.addEventListener("mouseleave", () => { cur.style.display = "none"; hideTip(); });
+}
+
+function tableView(rows) {
+  return `<div class="tablewrap"><table><thead><tr><th>Group</th><th class="r">Fraud rate</th><th class="r">Fraud claims</th><th class="r">Claims</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td>${esc(r.label)}</td><td class="r">${pct(r.rate)}</td><td class="r">${whole(Math.round(r.rate * r.n))}</td><td class="r">${whole(r.n)}</td></tr>`).join("")}
+  </tbody></table></div>`;
+}
+
+/* a titled chart card with a chart / table switch */
+function card({ title, takeaway, rows, kind, ref }) {
+  const el = document.createElement("section");
+  el.className = "panel";
+  el.innerHTML = `<div class="card-head"><div><h3>${esc(title)}</h3><p class="takeaway">${takeaway}</p></div>
+    <button class="toggle" type="button" aria-pressed="false">View as table</button></div><div class="body"></div>`;
+  const body = $(".body", el), btn = $(".toggle", el);
+  const draw = () => {
+    const asTable = btn.getAttribute("aria-pressed") === "true";
+    if (asTable) { body.className = "body"; body.innerHTML = tableView(rows); }
+    else if (kind === "line") { body.className = "body line-host"; lineChart(body, rows, ref); }
+    else { body.className = "body"; (kind === "h" ? hbar : vbar)(body, rows, ref); }
+    btn.textContent = asTable ? "View as chart" : "View as table";
+  };
+  btn.addEventListener("click", () => { btn.setAttribute("aria-pressed", btn.getAttribute("aria-pressed") === "true" ? "false" : "true"); draw(); });
+  el._draw = draw; draw();
+  if (kind === "line") queueMicrotask(draw);   // redraw once attached, so the width is measured correctly
+  return el;
+}
+
+/* plain-language takeaways, computed from the data */
+const hi = rows => rows.reduce((a, b) => (b.rate > a.rate ? b : a));
+const lo = rows => rows.reduce((a, b) => (b.rate < a.rate ? b : a));
+function spread(rows, unit = "") {
+  const a = hi(rows), b = lo(rows);
+  return `Highest: <b>${esc(a.label)}${unit}</b> at ${pct(a.rate)}. Lowest: <b>${esc(b.label)}${unit}</b> at ${pct(b.rate)}.`;
+}
+function flatOrSpread(rows, what, unit = "") {
+  const a = hi(rows), b = lo(rows);
+  return a.rate - b.rate < 0.04
+    ? `${what} makes little difference: every group sits between ${pct(b.rate)} and ${pct(a.rate)}.`
+    : spread(rows, unit);
+}
+
+/* ------------------------------------------------------------ views */
+function renderOverview() {
+  const s = state.stats, k = s.kpis, ref = k.fraud_rate;
+  const top = hi(s.by_provider_type);
+  const rest = s.by_provider_type.filter(r => r !== top);
+  const restRate = rest.reduce((t, r) => t + r.rate * r.n, 0) / rest.reduce((t, r) => t + r.n, 0);
+  $("#ov-title").textContent = top.rate > restRate * 1.5
+    ? `${top.label} claims are fraud ${pct(top.rate, 0)} of the time`
+    : "Where fraud concentrates";
+  $("#ov-sub").textContent = top.rate > restRate * 1.5
+    ? `That is ${(top.rate / restRate).toFixed(1)} times the rate of every other provider type combined (${pct(restRate, 0)}).`
+    : "Share of claims labelled fraudulent, broken down by who provides the care.";
+
+  $("#kpis").innerHTML = [
+    ["Claims analysed", whole(k.claims), `${s.date_range[0].slice(0, 4)} to ${s.date_range[1].slice(0, 4)}`],
+    ["Labelled fraud", pct(k.fraud_rate), `${whole(k.fraud_claims)} claims`],
+    ["Average claim", compact(k.avg_claim_amount), "per claim"],
+    ["Money in fraud claims", pct(k.fraud_money_share), "of total claim value"],
+  ].map(([l, v, sub]) => `<div class="kpi"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div><div class="kpi-sub">${sub}</div></div>`).join("");
+
+  const grid = $("#ov-grid"); grid.innerHTML = "";
+  grid.append(
+    card({ title:"Fraud rate by provider type", takeaway:spread(s.by_provider_type), rows:s.by_provider_type, kind:"h", ref }),
+    card({ title:"Fraud rate by provider specialty", takeaway:spread(s.by_specialty), rows:s.by_specialty, kind:"h", ref }),
+    card({ title:"Fraud rate by quarter", takeaway:flatOrSpread(s.by_quarter, "Time"), rows:s.by_quarter, kind:"line", ref }),
+    card({ title:"Fraud rate by service type", takeaway:spread(s.by_service_type), rows:s.by_service_type, kind:"h", ref }),
+  );
+}
+
+function renderPatterns() {
+  const s = state.stats, ref = s.kpis.fraud_rate, g = $("#pat-grid");
+  g.innerHTML = "";
+  g.append(
+    card({ title:"By number of procedures", takeaway:spread(s.by_procedures, " procedures"), rows:s.by_procedures, kind:"v", ref }),
+    card({ title:"By provider-patient distance (miles)", takeaway:spread(s.by_distance, " miles"), rows:s.by_distance, kind:"v", ref }),
+    card({ title:"By claim amount", takeaway:spread(s.by_amount), rows:s.by_amount, kind:"v", ref }),
+    card({ title:"By patient age", takeaway:flatOrSpread(s.by_age, "Age"), rows:s.by_age, kind:"v", ref }),
+    card({ title:"By admission type", takeaway:flatOrSpread(s.by_admission_type, "Admission type"), rows:s.by_admission_type, kind:"h", ref }),
+  );
+}
+
+async function renderClaims() {
+  const limit = $("#limit").value, scope = $("#scope").value;
+  const data = await api(`/api/top-claims?limit=${limit}&scope=${scope}`);
+  const lvl = { High:["high", "▲"], Medium:["medium", "◆"], Low:["low", "●"] };
+  const fill = { High:"var(--crit)", Medium:"var(--warn)", Low:"var(--good)" };
+  const t = state.stats && state.stats.test;
+  $("#claims-sub").textContent = scope === "test" && t
+    ? `On ${whole(t.n)} claims the model never saw, it flagged ${whole(t.flagged)} at its ${pct(data.threshold, 0)} threshold. ${pct(t.precision, 0)} of those flags were labelled fraud, and it caught ${pct(t.recall, 0)} of all labelled fraud.`
+    : `The ${data.count} highest scores across all ${whole(data.pool)} claims, at the model's ${pct(data.threshold, 0)} alert threshold.`;
+  $("#claims-note").textContent = scope === "test"
+    ? "These claims were set aside before training, so the scores show how the model performs on claims it has not seen."
+    : "This list includes claims the model learned from, so its top scores look more certain than they would on new claims.";
+  $("#claims-table").innerHTML = `<table><thead><tr>
+      <th>Claim</th><th>Provider</th><th>Specialty</th><th class="r">Amount</th><th class="r">Procedures</th><th class="r">Distance (mi)</th>
+      <th class="r">Model score</th><th>Risk</th><th>Dataset label</th></tr></thead><tbody>
+    ${data.claims.map(c => { const [cls, ico] = lvl[c.risk_level]; return `<tr>
+      <td class="num">#${c.claim_id}</td><td>${esc(c.provider_type)}</td><td>${esc(c.specialty)}</td>
+      <td class="r">${compact(c.claim_amount)}</td><td class="r">${c.procedures}</td><td class="r">${c.distance_miles}</td>
+      <td class="r"><span class="cellbar"><i><b style="width:${c.probability * 100}%;background:${fill[c.risk_level]}"></b></i>${pct(c.probability, 0)}</span></td>
+      <td><span class="badge ${cls}"><i aria-hidden="true">${ico}</i>${c.risk_level}</span></td>
+      <td>${c.labelled_fraud ? "Fraud" : "Not fraud"}</td></tr>`; }).join("")}
+    </tbody></table>`;
+}
+
+/* ------------------------------------------------------ claim checker */
+const FORM = [
+  ["Claim", [
+    ["Claim_Amount", "Claim amount", "number", { step:"any", min:0 }],
+    ["Deductible_Amount", "Deductible", "number", { step:"any", min:0 }],
+    ["CoPay_Amount", "Co-pay", "number", { step:"any", min:0 }],
+    ["Number_of_Procedures", "Number of procedures", "number", { step:1, min:1 }],
+    ["Service_Type", "Service type", "select"],
+    ["Claim_Submitted_Late", "Submitted late", "bool"],
+  ]],
+  ["Patient", [
+    ["Patient_Age", "Age", "number", { step:1, min:0, max:120 }],
+    ["Patient_Gender", "Gender", "select"],
+    ["Number_of_Previous_Claims_Patient", "Previous claims (patient)", "number", { step:1, min:0 }],
+  ]],
+  ["Provider and stay", [
+    ["Provider_Type", "Provider type", "select"],
+    ["Provider_Specialty", "Specialty", "select"],
+    ["Number_of_Previous_Claims_Provider", "Previous claims (provider)", "number", { step:1, min:0 }],
+    ["Provider_Patient_Distance_Miles", "Distance to provider (miles)", "number", { step:"any", min:0 }],
+    ["Admission_Type", "Admission type", "select"],
+    ["Discharge_Type", "Discharge type", "select"],
+    ["Length_of_Stay_Days", "Length of stay (days)", "number", { step:1, min:0 }],
+  ]],
+  ["Dates", [
+    ["Service_Date", "Service date", "date"],
+    ["Claim_Date", "Claim date", "date"],
+    ["Policy_Expiration_Date", "Policy expires", "date"],
+  ]],
+];
+
+function buildForm() {
+  const form = $("#claim-form");
+  form.innerHTML = FORM.map(([legend, fields]) => `<fieldset class="fieldset"><legend>${legend}</legend><div class="fields">
+    ${fields.map(([key, label, type, attrs = {}]) => {
+      let control;
+      if (type === "select") {
+        const opts = (state.options && state.options[key]) || [];
+        control = `<select id="f-${key}" name="${key}"><option value="">Typical</option>${opts.map(o => `<option>${esc(o)}</option>`).join("")}</select>`;
+      } else if (type === "bool") {
+        control = `<select id="f-${key}" name="${key}"><option value="">Typical</option><option value="1">Yes</option><option value="0">No</option></select>`;
+      } else {
+        control = `<input id="f-${key}" name="${key}" type="${type}" placeholder="Typical" ${Object.entries(attrs).map(([a, v]) => `${a}="${v}"`).join(" ")}>`;
+      }
+      return `<div class="field"><label for="f-${key}">${label}</label>${control}</div>`;
+    }).join("")}</div></fieldset>`).join("") +
+    `<div class="actions"><button class="btn primary" type="submit">Score claim</button>
+      <button class="btn" type="button" id="load-sample">Load a real claim</button>
+      <button class="btn" type="button" id="clear-form">Clear</button></div>`;
+
+  form.addEventListener("submit", e => { e.preventDefault(); scoreClaim(); });
+  $("#load-sample").addEventListener("click", () => loadSample(true));
+  $("#clear-form").addEventListener("click", () => { form.reset(); state.base = {}; state.labelled = null; $("#result").innerHTML = `<h2>Model result</h2><p class="hint">Fill in the claim and select Score claim.</p>`; });
+  form.addEventListener("input", () => { state.labelled = null; const n = $(".labelnote"); if (n) n.remove(); });
+}
+
+function fillForm(claim) {
+  FORM.flatMap(([, f]) => f).forEach(([key, , type]) => {
+    const el = $(`#f-${key}`); let v = claim[key];
+    if (v === undefined || v === null) { el.value = ""; return; }
+    if (type === "bool") v = (v === true || v === 1 || v === "1" || v === "True" || v === "true") ? "1" : "0";
+    el.value = String(v);
+  });
+}
+
+async function loadSample(score) {
+  try {
+    const s = await api("/api/sample-claim");
+    state.base = s.claim; fillForm(s.claim); state.labelled = s.labelled_fraud;
+    if (score) await scoreClaim(s.labelled_fraud);
+  } catch (e) { showError(e.message); }
+}
+
+function collect() {
+  const claim = { ...state.base };
+  FORM.flatMap(([, f]) => f).forEach(([key, , type]) => {
+    const v = $(`#f-${key}`).value;
+    if (v === "") { delete claim[key]; return; }
+    claim[key] = (type === "number" || type === "bool") ? Number(v) : v;
+  });
+  return claim;
+}
+
+async function scoreClaim(labelled = null) {
+  const out = $("#result");
+  try {
+    const res = (await api("/predict", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(collect()) })).results[0];
+    const p = res.fraud_probability, t = state.threshold;
+    const [cls, ico, color, name] = { High:["high", "▲", "var(--crit)", "High risk"], Medium:["medium", "◆", "var(--warn)", "Medium risk"], Low:["low", "●", "var(--good)", "Low risk"] }[res.risk_level];
+    const verdict = res.is_fraud
+      ? `At or above the ${pct(t, 0)} alert threshold. This claim should go to manual review.`
+      : p >= t / 2
+        ? `Below the ${pct(t, 0)} alert threshold, but high enough to keep an eye on.`
+        : `Well below the ${pct(t, 0)} alert threshold. No review needed.`;
+    out.innerHTML = `<h2>Model result</h2>
+      <div class="score"><span class="score-num">${pct(p, 0)}</span><span class="badge ${cls}"><i aria-hidden="true">${ico}</i>${name}</span></div>
+      <div class="meter" role="img" aria-label="Fraud probability ${pct(p, 0)}, alert threshold ${pct(t, 0)}">
+        <div class="meter-track"><div class="meter-fill" id="mfill" style="background:${color}"></div></div>
+        <div class="meter-tick" style="left:${t * 100}%"><span>Alert at ${pct(t, 0)}</span></div>
+      </div>
+      <div class="scale"><span>0%</span><span>100%</span></div>
+      <p class="verdict">${verdict}</p>
+      ${labelled === null ? "" : `<p class="labelnote">In the dataset, this claim is labelled <b>${labelled ? "fraud" : "not fraud"}</b>. The model never saw this claim during training.</p>`}`;
+    requestAnimationFrame(() => requestAnimationFrame(() => { $("#mfill").style.width = (p * 100) + "%"; }));
+  } catch (e) { out.innerHTML = `<h2>Model result</h2><p class="hint">${esc(e.message)}</p>`; }
+}
+
+/* --------------------------------------------------------- routing */
+const VIEWS = ["overview", "check", "claims", "patterns"];
+async function show(name) {
+  if (!VIEWS.includes(name)) name = "overview";
+  VIEWS.forEach(v => { $(`#view-${v}`).hidden = v !== name; });
+  document.querySelectorAll(".nav a").forEach(a => {
+    if (a.dataset.view === name) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  });
+  hideTip();
+  try {
+    if (name === "overview" && state.stats) renderOverview();
+    if (name === "patterns" && state.stats) renderPatterns();
+    if (name === "claims") await renderClaims();
+    if (name === "check" && !state.rendered.check) { state.rendered.check = true; buildForm(); await loadSample(true); }
+  } catch (e) { showError(e.message); }
+}
+addEventListener("hashchange", () => show(location.hash.slice(1)));
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { const v = location.hash.slice(1) || "overview"; if (v === "overview" || v === "patterns") show(v); }, 150); });
+["#limit", "#scope"].forEach(id => $(id).addEventListener("change", () => renderClaims().catch(e => showError(e.message))));
+
+function showError(msg) {
+  $("#banner").innerHTML = `<div class="banner" role="alert"><b>Could not reach the API.</b> ${esc(msg)}<br>
+    Start it with <code>python api/app.py</code> and open <code>http://127.0.0.1:5000</code> in your browser.</div>`;
+}
+
+/* ------------------------------------------------------------- theme */
+const themeBtn = $("#theme-btn");
+try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (_) {}
+themeBtn.addEventListener("click", () => {
+  const dark = (document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
+  const next = dark ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("theme", next); } catch (_) {}
+});
+
+/* -------------------------------------------------------------- start */
+(async function init() {
+  try {
+    const [h, stats, options] = await Promise.all([api("/health"), api("/api/stats"), api("/api/options")]);
+    state.threshold = h.threshold; state.stats = stats; state.options = options;
+    $("#banner").innerHTML = "";
+  } catch (e) { showError(e.message); }
+  show(location.hash.slice(1) || "overview");
+})();
+</script>
+</body>
+</html>
