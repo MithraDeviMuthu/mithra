@@ -2,7 +2,7 @@
 Flask API + dashboard server for the Insurance Policy Analytics System.
 
 Run (from the project root):
-    pip install flask flask-cors
+    pip install -r requirements.txt
     python api/app.py
 Then open http://127.0.0.1:5000
 
@@ -15,15 +15,45 @@ Endpoints
     GET  /api/options      category values for the form drop-downs
     GET  /api/sample-claim a random real claim (to fill the form)
     GET  /api/top-claims   the highest-scoring claims in the data
+    POST /predict-status   predicted claim status (Approved/Rejected/Under Review)
+    GET  /api/provider-risk  per-provider fraud rate trend (Rising/Stable/Falling)
+    GET  /api/loss-ratio   premium vs. paid-claims loss ratio, overall and by segment
+    GET  /api/documents    list this browser session's policy documents
+    POST /api/documents    upload and index a PDF, TXT, or DOCX
+    GET  /api/documents/<id>/status  document processing status
+    DELETE /api/documents/<id>  delete a document and its passages
+    POST /api/chat        retrieve and cite evidence from selected documents
 """
+import json
 import os
+import secrets
+import sys
+import uuid
 from pathlib import Path
 
 import joblib
 import numpy as np
 import pandas as pd
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session
 from sklearn.model_selection import train_test_split
+from werkzeug.exceptions import RequestEntityTooLarge
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    from api.anomaly_detection import detect_claim_anomalies
+    from api.claim_extraction import ClaimDocumentStore, ClaimExtractionError
+    from api.duplicate_detection import find_duplicate_claims
+    from api.policy_verification import verify_claim_against_policy
+    from api.rag import DEFAULT_MIN_SCORE, DEFAULT_TOP_K, MAX_FILE_BYTES, DocumentError, RagStore
+except ImportError:                  # running directly as `python api/app.py`
+    from anomaly_detection import detect_claim_anomalies
+    from claim_extraction import ClaimDocumentStore, ClaimExtractionError
+    from duplicate_detection import find_duplicate_claims
+    from policy_verification import verify_claim_against_policy
+    from rag import DEFAULT_MIN_SCORE, DEFAULT_TOP_K, MAX_FILE_BYTES, DocumentError, RagStore
 
 try:                                   # optional: lets a separate React app call this API
     from flask_cors import CORS
@@ -32,6 +62,8 @@ except ImportError:                    # pragma: no cover
 
 # ---------------------------------------------------------------- settings
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+RAG_DATA_DIR = Path(os.environ.get("RAG_DATA_DIR", PROJECT_ROOT / "data" / "rag"))
+CLAIM_DATA_DIR = Path(os.environ.get("CLAIM_DATA_DIR", PROJECT_ROOT / "data" / "claim_analysis"))
 MODEL_PATH = Path(os.environ.get("MODEL_PATH", PROJECT_ROOT / "ml" / "health_claims_model.joblib"))
 DASHBOARD_DIR = next((d for d in (PROJECT_ROOT / "dashboard", PROJECT_ROOT / "frontend")
                       if (d / "index.html").exists()), PROJECT_ROOT / "dashboard")
@@ -40,8 +72,9 @@ DATA_CANDIDATES = [
     PROJECT_ROOT / "data" / "processed" / "health_claims_clean.csv",
     PROJECT_ROOT / "data" / "processed" / "claims_clean.csv",
 ]
+STATUS_MODEL_PATH = Path(os.environ.get("STATUS_MODEL_PATH", PROJECT_ROOT / "ml" / "claim_status_model.joblib"))
 DEFAULT_THRESHOLD = 0.30               # used if the saved model file has no threshold
-DATE_COLUMNS = ["Claim_Date", "Service_Date", "Policy_Expiration_Date"]
+DATE_COLUMNS = ["Claim_Date", "Service_Date", "Policy_Expiration_Date", "Policy_Start_Date"]
 MAX_BATCH = 1000
 MIN_GROUP = 100                        # hide chart groups with fewer claims than this
 # These two must match the train_test_split() call in your model.py. They let the
@@ -72,14 +105,84 @@ for col in EXPECTED_COLUMNS:
     if name not in RAW_FIELDS:
         RAW_FIELDS.append(name)
 
+# ------------------------------------------------- load claim-status model (optional)
+# This is a SEPARATE model from the fraud classifier above (see ml/claim_status_model.py).
+# If it hasn't been trained yet, the API still runs fine -- /predict-status just
+# responds with a 503 until the file exists.
+status_model = None
+status_label_encoder = None
+STATUS_EXPECTED_COLUMNS = []
+STATUS_CATEGORICAL = []
+STATUS_NUMERIC = []
+STATUS_RAW_FIELDS = []
+
+if STATUS_MODEL_PATH.exists():
+    status_saved = joblib.load(STATUS_MODEL_PATH)
+    status_model = status_saved["model"]
+    status_label_encoder = status_saved["label_encoder"]
+
+    status_preprocessor = status_model.named_steps["preprocessor"]
+    STATUS_EXPECTED_COLUMNS = list(status_preprocessor.feature_names_in_)
+    _status_cat = [cols for name, _, cols in status_preprocessor.transformers_ if name == "categorical"]
+    STATUS_CATEGORICAL = list(_status_cat[0]) if _status_cat else []
+    STATUS_NUMERIC = [c for c in STATUS_EXPECTED_COLUMNS if c not in STATUS_CATEGORICAL]
+
+    for col in STATUS_EXPECTED_COLUMNS:
+        base = next((d for d in DATE_COLUMNS if col.startswith(d + "_")), None)
+        name = base if base else col
+        if name not in STATUS_RAW_FIELDS:
+            STATUS_RAW_FIELDS.append(name)
+
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = MAX_FILE_BYTES + 1024 * 1024
+app.config["SECRET_KEY"] = os.environ.get("RAG_SESSION_SECRET")
+if not app.config["SECRET_KEY"]:
+    RAG_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    secret_path = RAG_DATA_DIR / ".session_secret"
+    try:
+        app.config["SECRET_KEY"] = secret_path.read_text(encoding="ascii")
+    except FileNotFoundError:
+        generated_secret = secrets.token_hex(32)
+        try:
+            with secret_path.open("x", encoding="ascii") as secret_file:
+                secret_file.write(generated_secret)
+            app.config["SECRET_KEY"] = generated_secret
+        except FileExistsError:
+            app.config["SECRET_KEY"] = secret_path.read_text(encoding="ascii")
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "").lower() in {
+    "1", "true", "yes",
+}
+RAG_STORE = RagStore(RAG_DATA_DIR)
+CLAIM_STORE = ClaimDocumentStore(CLAIM_DATA_DIR)
 if CORS:
     CORS(app)
 
 
+def rag_owner_id():
+    """Give each browser session a separate, signed document-library scope."""
+    if "rag_owner_id" not in session:
+        session["rag_owner_id"] = uuid.uuid4().hex
+    return session["rag_owner_id"]
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def request_too_large(_error):
+    return jsonify(error="Request is too large. Documents must be 20 MB or smaller."), 413
+
+
 # ---------------------------------------------------------------- scoring
-def prepare(records):
-    """Turn raw claim dicts (or a DataFrame) into the exact columns the model was trained on."""
+def prepare(records, expected_columns=None, numeric=None, categorical=None):
+    """Turn raw claim dicts (or a DataFrame) into the exact columns a model was trained on.
+
+    Defaults to the fraud model's columns; pass expected_columns/numeric/categorical
+    to reuse this for a different model (e.g. the claim-status model).
+    """
+    expected_columns = expected_columns if expected_columns is not None else EXPECTED_COLUMNS
+    numeric = numeric if numeric is not None else NUMERIC
+    categorical = categorical if categorical is not None else CATEGORICAL
+
     df = pd.DataFrame(records)
 
     # same date handling as training: date -> year / month / day
@@ -90,11 +193,11 @@ def prepare(records):
             df[col + "_Month"] = dates.dt.month
             df[col + "_Day"] = dates.dt.day
 
-    df = df.reindex(columns=EXPECTED_COLUMNS)          # missing fields become NaN
+    df = df.reindex(columns=expected_columns)          # missing fields become NaN
 
-    for col in NUMERIC:
+    for col in numeric:
         df[col] = pd.to_numeric(df[col], errors="coerce").astype(float)
-    for col in CATEGORICAL:
+    for col in categorical:
         df[col] = df[col].astype(object).where(df[col].isna(), df[col].astype(str))
     return df
 
@@ -155,6 +258,134 @@ def binned(df, column, edges, labels):
     rows = rate_rows(tmp, "_bin", min_n=1)
     order = {l: i for i, l in enumerate(labels)}
     return sorted(rows, key=lambda r: order[r["label"]])
+
+
+PROVIDER_MIN_CLAIMS = 15         # ignore providers with too few claims to judge reliably
+PROVIDER_MIN_PERIOD_CLAIMS = 4   # ignore a period with too few claims for that provider
+RISING_THRESHOLD = 0.10          # flag "Rising" if latest period's rate is this much higher
+                                 # than the provider's own earlier average
+
+
+def build_provider_risk():
+    """Per-provider (Hospital_ID) fraud-rate trend, not just a single overall rate.
+
+    Looks at each provider's fraud rate year by year and flags ones where the rate
+    is climbing -- a different signal than flagging one claim at a time: this catches
+    a provider whose behaviour is getting worse over time, even if no single claim
+    looks dramatic on its own.
+
+    Uses YEARLY buckets rather than quarterly: this dataset averages only ~20 claims
+    per provider across several years, too thin to form a reliable quarterly rate.
+    """
+    df = DATA.copy()
+    df["_period"] = df["Claim_Date"].dt.year.astype("Int64").astype(str)
+
+    overall = df.groupby("Hospital_ID").agg(
+        provider_type=("Provider_Type", "first"),
+        specialty=("Provider_Specialty", "first"),
+        total_claims=("Is_Fraudulent", "size"),
+        overall_fraud_rate=("Is_Fraudulent", "mean"),
+        total_claim_amount=("Claim_Amount", "sum"),
+    )
+    overall = overall[overall["total_claims"] >= PROVIDER_MIN_CLAIMS]
+
+    periods = (
+        df.groupby(["Hospital_ID", "_period"])["Is_Fraudulent"]
+        .agg(["mean", "size"])
+        .reset_index()
+    )
+    periods = periods[periods["size"] >= PROVIDER_MIN_PERIOD_CLAIMS]
+
+    rows = []
+    for hospital_id, prov in overall.iterrows():
+        prows = periods[periods["Hospital_ID"] == hospital_id].sort_values("_period")
+        if len(prows) < 2:
+            trend = "Not enough history"
+            latest_rate = float(prov["overall_fraud_rate"])
+            delta = 0.0
+        else:
+            latest_rate = float(prows.iloc[-1]["mean"])
+            earlier_avg = float(prows.iloc[:-1]["mean"].mean())
+            delta = round(latest_rate - earlier_avg, 4)
+            if delta >= RISING_THRESHOLD:
+                trend = "Rising"
+            elif delta <= -RISING_THRESHOLD:
+                trend = "Falling"
+            else:
+                trend = "Stable"
+
+        rows.append({
+            "hospital_id": int(hospital_id),
+            "provider_type": prov["provider_type"],
+            "specialty": prov["specialty"],
+            "total_claims": int(prov["total_claims"]),
+            "overall_fraud_rate": round(float(prov["overall_fraud_rate"]), 4),
+            "latest_period_fraud_rate": round(latest_rate, 4),
+            "trend": trend,
+            "trend_delta": delta,
+            "total_claim_amount": round(float(prov["total_claim_amount"]), 2),
+            "periods_observed": len(prows),
+        })
+
+    rows.sort(key=lambda r: (-1 if r["trend"] == "Rising" else 0, -r["overall_fraud_rate"]))
+    return rows
+
+
+LOSS_RATIO_MIN_GROUP = 50   # hide segments with too few policies for a reliable ratio
+
+
+def _loss_ratio_rows(df, key):
+    """Premiums collected vs. claims actually paid out (Approved claims only) per group."""
+    g = df.groupby(key, observed=True).apply(
+        lambda d: pd.Series({
+            "premium_collected": d["Premium_Amount"].sum(),
+            "claims_paid": d.loc[d["Claim_Status"] == "Approved", "Claim_Amount"].sum(),
+            "n": len(d),
+        }),
+        include_groups=False,
+    )
+    g = g[g["n"] >= LOSS_RATIO_MIN_GROUP]
+    g["loss_ratio"] = g["claims_paid"] / g["premium_collected"]
+    return [
+        {
+            "label": str(idx),
+            "loss_ratio": round(float(r["loss_ratio"]), 4),
+            "premium_collected": round(float(r["premium_collected"]), 2),
+            "claims_paid": round(float(r["claims_paid"]), 2),
+            "n": int(r["n"]),
+        }
+        for idx, r in g.iterrows()
+    ]
+
+
+def build_loss_ratio():
+    """Premium vs. paid-out-claims analysis -- the core insurance profitability metric.
+
+    loss_ratio = claims actually paid out (Approved claims only) / premium collected.
+    Industry benchmark is roughly 0.6-0.8; this reuses Claim_Status so only money
+    the insurer actually pays counts as a "loss", not claims that were rejected.
+    """
+    df = DATA.copy()
+
+    overall_premium = float(df["Premium_Amount"].sum())
+    overall_paid = float(df.loc[df["Claim_Status"] == "Approved", "Claim_Amount"].sum())
+
+    return {
+        "overall": {
+            "loss_ratio": round(overall_paid / overall_premium, 4),
+            "premium_collected": round(overall_premium, 2),
+            "claims_paid": round(overall_paid, 2),
+            "policies": int(len(df)),
+        },
+        "by_policy_type": sorted(_loss_ratio_rows(df, "Policy_Type"),
+                                  key=lambda r: -r["loss_ratio"]),
+        "by_income_bracket": sorted(_loss_ratio_rows(df, "Patient_Income_Bracket"),
+                                     key=lambda r: -r["loss_ratio"]),
+        "by_provider_type": sorted(_loss_ratio_rows(df, "Provider_Type"),
+                                    key=lambda r: -r["loss_ratio"]),
+        "by_network": sorted(_loss_ratio_rows(df, "Network_Provider"),
+                              key=lambda r: -r["loss_ratio"]),
+    }
 
 
 def build_stats():
@@ -227,12 +458,236 @@ def dashboard():
 @app.get("/health")
 def health():
     return jsonify(status="ok", model=MODEL_PATH.name, threshold=THRESHOLD,
-                   n_input_features=len(EXPECTED_COLUMNS), data_loaded=DATA is not None)
+                   n_input_features=len(EXPECTED_COLUMNS), data_loaded=DATA is not None,
+                   status_model_loaded=status_model is not None)
+
+
+@app.get("/api/documents")
+def list_documents():
+    return jsonify(documents=RAG_STORE.list_documents(rag_owner_id()))
+
+
+@app.post("/api/documents")
+def upload_document():
+    upload = request.files.get("file")
+    if upload is None:
+        return jsonify(error="Choose a PDF, TXT, or DOCX document to upload."), 400
+    content = upload.stream.read(MAX_FILE_BYTES + 1)
+    try:
+        document = RAG_STORE.add_document(rag_owner_id(), upload.filename, content)
+    except DocumentError as exc:
+        body = {"error": str(exc)}
+        if hasattr(exc, "document_id"):
+            body["document_id"] = exc.document_id
+        return jsonify(body), 422
+    return jsonify(document=document), 201
+
+
+@app.get("/api/documents/<document_id>/status")
+def document_status(document_id):
+    document = RAG_STORE.document_status(rag_owner_id(), document_id)
+    if document is None:
+        return jsonify(error="Document not found."), 404
+    return jsonify(document=document)
+
+
+@app.delete("/api/documents/<document_id>")
+def delete_document(document_id):
+    if not RAG_STORE.delete_document(rag_owner_id(), document_id):
+        return jsonify(error="Document not found."), 404
+    return jsonify(deleted=True, document_id=document_id)
+
+
+@app.get("/api/review-claims")
+def api_review_claims():
+    missing = need_data()
+    if missing:
+        return missing
+    limit = min(max(request.args.get("limit", 200, type=int), 1), 500)
+    columns = [
+        "Claim_ID", "Policy_Number", "Claim_Amount", "Claim_Date", "Service_Date",
+        "Provider_Type", "Provider_Specialty", "Service_Type", "Hospital_ID",
+        "Diagnosis_Code", "Claim_Status",
+    ]
+    subset = DATA.loc[:, columns].head(limit).copy()
+    rows = []
+    for row in subset.to_dict(orient="records"):
+        rows.append({
+            "claim_id": row.get("Claim_ID"),
+            "policy_number": row.get("Policy_Number"),
+            "claim_amount": float(row["Claim_Amount"]) if pd.notna(row.get("Claim_Amount")) else None,
+            "claim_date": str(pd.to_datetime(row.get("Claim_Date")).date()) if pd.notna(row.get("Claim_Date")) else None,
+            "service_date": str(pd.to_datetime(row.get("Service_Date")).date()) if pd.notna(row.get("Service_Date")) else None,
+            "provider_type": row.get("Provider_Type"),
+            "provider_specialty": row.get("Provider_Specialty"),
+            "service_type": row.get("Service_Type"),
+            "hospital_id": row.get("Hospital_ID"),
+            "diagnosis_code": row.get("Diagnosis_Code"),
+            "claim_status": row.get("Claim_Status"),
+        })
+    return jsonify(claims=rows, count=len(rows))
+
+
+@app.get("/api/claim-documents")
+def list_claim_documents():
+    return jsonify(claim_documents=CLAIM_STORE.list_documents(rag_owner_id()))
+
+
+@app.post("/api/claim-documents")
+def upload_claim_document():
+    upload = request.files.get("file")
+    if upload is None:
+        return jsonify(error="Choose a PDF, TXT, DOCX, or image file for claim extraction."), 400
+    content = upload.stream.read(MAX_FILE_BYTES + 1)
+    try:
+        document = CLAIM_STORE.upload_document(rag_owner_id(), upload.filename, content, upload.mimetype or "application/octet-stream")
+    except ClaimExtractionError as exc:
+        return jsonify(error=str(exc)), 422
+    return jsonify(claim_document=document), 201
+
+
+@app.get("/api/claim-documents/<document_id>")
+def get_claim_document(document_id):
+    document = CLAIM_STORE._one_document(rag_owner_id(), document_id)
+    if document is None:
+        return jsonify(error="Claim document not found."), 404
+    if document.get("raw_extraction"):
+        document["raw_extraction"] = json.loads(document["raw_extraction"])
+    if document.get("corrected_extraction"):
+        document["corrected_extraction"] = json.loads(document["corrected_extraction"])
+    if document.get("validation_errors"):
+        document["validation_errors"] = json.loads(document["validation_errors"])
+    return jsonify(claim_document=document)
+
+
+@app.post("/api/claim-documents/<document_id>/review")
+def review_claim_document(document_id):
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify(error="Send a JSON object containing the corrected field values."), 400
+    try:
+        document = CLAIM_STORE.update_document(rag_owner_id(), document_id, payload)
+    except ClaimExtractionError as exc:
+        return jsonify(error=str(exc)), 404 if "not found" in str(exc).lower() else 422
+    return jsonify(claim_document=document)
+
+
+@app.delete("/api/claim-documents/<document_id>")
+def delete_claim_document(document_id):
+    if not CLAIM_STORE.delete_document(rag_owner_id(), document_id):
+        return jsonify(error="Claim document not found."), 404
+    return jsonify(deleted=True, document_id=document_id)
+
+
+@app.post("/api/chat")
+def document_chat():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify(error="Send a JSON object containing a question."), 400
+    question = payload.get("question")
+    if not isinstance(question, str) or not question.strip() or len(question) > 2000:
+        return jsonify(error="Question must contain 1 to 2,000 characters."), 400
+    document_ids = payload.get("document_ids")
+    if document_ids is not None and (
+        not isinstance(document_ids, list)
+        or len(document_ids) > 100
+        or not all(isinstance(value, str) for value in document_ids)
+    ):
+        return jsonify(error="document_ids must be a list of at most 100 document IDs."), 400
+    try:
+        top_k = int(payload.get("top_k", os.environ.get("RAG_TOP_K", DEFAULT_TOP_K)))
+        min_score = float(payload.get("min_score", os.environ.get("RAG_MIN_SCORE", DEFAULT_MIN_SCORE)))
+        if top_k < 1 or top_k > 10 or not 0 <= min_score <= 1:
+            raise ValueError
+        result = RAG_STORE.answer(rag_owner_id(), question.strip(), document_ids, top_k, min_score)
+    except DocumentError as exc:
+        return jsonify(error=str(exc)), 400
+    except (TypeError, ValueError, OverflowError):
+        return jsonify(error="top_k must be 1-10 and min_score must be between 0 and 1."), 400
+    return jsonify(result)
+
+
+@app.post("/api/policy-verification")
+def policy_verification():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify(error="Send a JSON object with a policy_document_id and claim fields."), 400
+
+    policy_document_id = payload.get("policy_document_id")
+    if not isinstance(policy_document_id, str) or not policy_document_id.strip():
+        return jsonify(error="policy_document_id is required."), 400
+
+    claim_fields = payload.get("claim_fields")
+    if not isinstance(claim_fields, dict):
+        return jsonify(error="claim_fields must be an object containing claim values."), 400
+
+    result = verify_claim_against_policy(rag_owner_id(), policy_document_id, claim_fields, RAG_STORE)
+    return jsonify(result)
+
+
+@app.post("/api/duplicate-claims")
+def duplicate_claims():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify(error="Send a JSON object with a claim and a comparison dataset."), 400
+
+    claim = payload.get("claim")
+    comparisons = payload.get("comparisons")
+    if not isinstance(claim, dict):
+        return jsonify(error="claim must be an object."), 400
+    if comparisons is None:
+        comparisons = []
+    if not isinstance(comparisons, list):
+        return jsonify(error="comparisons must be a list of claim records."), 400
+
+    exact_threshold = payload.get("exact_threshold", 0.96)
+    near_threshold = payload.get("near_threshold", 0.82)
+    try:
+        exact_threshold = float(exact_threshold)
+        near_threshold = float(near_threshold)
+    except (TypeError, ValueError):
+        return jsonify(error="thresholds must be numeric."), 400
+
+    result = find_duplicate_claims(claim, comparisons, exact_threshold=exact_threshold, near_threshold=near_threshold)
+    return jsonify(result)
+
+
+@app.post("/api/anomaly-detection")
+def anomaly_detection():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify(error="Send a JSON object with a claims dataset."), 400
+
+    claims = payload.get("claims")
+    group_by = payload.get("group_by")
+    min_group_size = payload.get("min_group_size", 20)
+    if claims is None:
+        return jsonify(error="claims is required."), 400
+    if not isinstance(claims, list):
+        return jsonify(error="claims must be a list of claim records."), 400
+    if group_by is not None and not isinstance(group_by, list):
+        return jsonify(error="group_by must be a list of column names when provided."), 400
+    try:
+        min_group_size = int(min_group_size)
+    except (TypeError, ValueError):
+        return jsonify(error="min_group_size must be an integer."), 400
+
+    result = detect_claim_anomalies(claims, group_by=group_by, min_group_size=max(1, min_group_size))
+    return jsonify(result)
 
 
 @app.get("/fields")
 def fields():
     return jsonify(fields=RAW_FIELDS, categorical=CATEGORICAL)
+
+
+@app.get("/fields-status")
+def fields_status():
+    if status_model is None:
+        return jsonify(error="Claim-status model not found. Run ml/claim_status_model.py "
+                             "to train it, then restart the API."), 503
+    return jsonify(fields=STATUS_RAW_FIELDS, categorical=STATUS_CATEGORICAL,
+                   classes=list(status_label_encoder.classes_))
 
 
 @app.post("/predict")
@@ -266,6 +721,43 @@ def predict():
     return jsonify(threshold=THRESHOLD, count=len(results), results=results)
 
 
+@app.post("/predict-status")
+def predict_status():
+    if status_model is None:
+        return jsonify(error="Claim-status model not found. Run ml/claim_status_model.py "
+                             "to train it, then restart the API."), 503
+
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return jsonify(error="Send a JSON body (one claim or a list of claims)."), 400
+
+    if isinstance(payload, dict) and "claims" in payload:
+        payload = payload["claims"]
+    records = [payload] if isinstance(payload, dict) else payload
+    if not isinstance(records, list) or not records or not all(isinstance(r, dict) for r in records):
+        return jsonify(error="Body must be a claim object, a list of claim objects, "
+                             "or {\"claims\": [...]}."), 400
+    if len(records) > MAX_BATCH:
+        return jsonify(error=f"Send at most {MAX_BATCH} claims per request."), 400
+
+    try:
+        X = prepare(records, STATUS_EXPECTED_COLUMNS, STATUS_NUMERIC, STATUS_CATEGORICAL)
+        probs = status_model.predict_proba(X)
+        preds = probs.argmax(axis=1)
+    except Exception as exc:           # bad values the model cannot handle
+        return jsonify(error=f"Could not score the claim(s): {exc}"), 422
+
+    classes = list(status_label_encoder.classes_)
+    results = [
+        {
+            "predicted_status": classes[pred],
+            "probabilities": {cls: round(float(p), 4) for cls, p in zip(classes, prob_row)},
+        }
+        for pred, prob_row in zip(preds, probs)
+    ]
+    return jsonify(count=len(results), results=results)
+
+
 @app.get("/api/stats")
 def api_stats():
     missing = need_data()
@@ -274,6 +766,33 @@ def api_stats():
     if "stats" not in _cache:
         _cache["stats"] = build_stats()
     return jsonify(_cache["stats"])
+
+
+@app.get("/api/provider-risk")
+def api_provider_risk():
+    missing = need_data()
+    if missing:
+        return missing
+    if "provider_risk" not in _cache:
+        _cache["provider_risk"] = build_provider_risk()
+    rows = _cache["provider_risk"]
+
+    trend_filter = request.args.get("trend")  # e.g. ?trend=Rising
+    if trend_filter:
+        rows = [r for r in rows if r["trend"].lower() == trend_filter.lower()]
+
+    limit = min(max(request.args.get("limit", 50, type=int), 1), 500)
+    return jsonify(count=len(rows[:limit]), total_providers=len(rows), providers=rows[:limit])
+
+
+@app.get("/api/loss-ratio")
+def api_loss_ratio():
+    missing = need_data()
+    if missing:
+        return missing
+    if "loss_ratio" not in _cache:
+        _cache["loss_ratio"] = build_loss_ratio()
+    return jsonify(_cache["loss_ratio"])
 
 
 @app.get("/api/options")

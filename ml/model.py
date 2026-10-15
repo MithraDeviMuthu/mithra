@@ -29,7 +29,8 @@ drop_columns = [
     "Is_Fraudulent",
     "Claim_ID",
     "Patient_ID",
-    "Policy_Number"
+    "Policy_Number",
+    "Claim_Status"
 ]
 
 X = df.drop(
@@ -40,9 +41,9 @@ X = df.drop(
 date_columns = [
     "Claim_Date",
     "Service_Date",
-    "Policy_Expiration_Date"
+    "Policy_Expiration_Date",
+    "Policy_Start_Date"
 ]
-
 for col in date_columns:
     if col in X.columns:
         dates = pd.to_datetime(X[col], errors="coerce")
