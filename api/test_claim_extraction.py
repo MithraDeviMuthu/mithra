@@ -1,6 +1,6 @@
 import io
 import json
-import os
+import shutil
 import tempfile
 import unittest
 
@@ -9,6 +9,25 @@ from pypdf import PdfWriter
 
 from api.app import app
 from api.claim_extraction import ClaimDocumentStore, ClaimExtractionError
+
+try:
+    import fitz  # noqa: F401
+    from PIL import Image, ImageDraw, ImageFont
+    OCR_READY = shutil.which("tesseract") is not None
+except ImportError:
+    OCR_READY = False
+
+
+def _claim_image_bytes(fmt="PNG"):
+    img = Image.new("RGB", (1000, 220), "white")
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.load_default(size=32)
+    draw.text((20, 20), "Policy Number: POL-1234", fill="black", font=font)
+    draw.text((20, 80), "Claim Number: CLM-5678", fill="black", font=font)
+    draw.text((20, 140), "Claim Amount: $450.00", fill="black", font=font)
+    buf = io.BytesIO()
+    img.save(buf, format=fmt)
+    return buf.getvalue()
 
 
 class ClaimExtractionTests(unittest.TestCase):
@@ -99,9 +118,24 @@ class ClaimExtractionTests(unittest.TestCase):
         with self.assertRaises(ClaimExtractionError):
             self.store.upload_document("owner-a", "oversized.txt", b"x" * (10 * 1024 * 1024 + 1))
 
-    def test_image_upload_reports_ocr_not_available(self):
+    def test_invalid_image_is_rejected(self):
         with self.assertRaises(ClaimExtractionError):
             self.store.upload_document("owner-a", "scan.png", b"fake-image-content")
+
+    @unittest.skipUnless(OCR_READY, "Tesseract/OCR packages not installed")
+    def test_image_ocr_extracts_fields(self):
+        doc = self.store.upload_document("owner-a", "scan.png", _claim_image_bytes("PNG"))
+        self.assertEqual(doc["status"], "ready")
+        fields = json.loads(doc["raw_extraction"])["fields"]
+        self.assertIn("1234", fields["policy_number"])
+        self.assertIn("450", fields["claim_amount"])
+
+    @unittest.skipUnless(OCR_READY, "Tesseract/OCR packages not installed")
+    def test_scanned_pdf_falls_back_to_ocr(self):
+        doc = self.store.upload_document("owner-a", "scan.pdf", _claim_image_bytes("PDF"))
+        self.assertEqual(doc["status"], "ready")
+        fields = json.loads(doc["raw_extraction"])["fields"]
+        self.assertIn("1234", fields["policy_number"])
 
     def test_api_routes_upload_and_review_for_claim_documents(self):
         payload = {

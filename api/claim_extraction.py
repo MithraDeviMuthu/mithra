@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import sqlite3
 import uuid
@@ -130,7 +131,7 @@ def _text_from_pdf(path):
                 text_parts.append(page_text)
         merged = "\n\n".join(text_parts)
         if not merged.strip():
-            raise ClaimExtractionError("No readable text could be extracted from the PDF.")
+            merged = _ocr_pdf(path)  # scanned PDF: no text layer
         return merged
     except ClaimExtractionError:
         raise
@@ -170,8 +171,55 @@ def _text_from_txt(path):
     return text
 
 
+def _configure_tesseract(pytesseract):
+    cmd = os.environ.get("TESSERACT_CMD")
+    if cmd:
+        pytesseract.pytesseract.tesseract_cmd = cmd
+
+
 def _text_from_image(path):
-    raise ClaimExtractionError("OCR is not configured for image uploads. Please convert the file to PDF, DOCX, or TXT, or enable OCR support.")
+    try:
+        import pytesseract
+        from PIL import Image
+    except ImportError as exc:
+        raise ClaimExtractionError("Image OCR requires the pytesseract and pillow packages.") from exc
+    _configure_tesseract(pytesseract)
+    try:
+        text = pytesseract.image_to_string(Image.open(str(path)).convert("L"))
+    except pytesseract.TesseractNotFoundError as exc:
+        raise ClaimExtractionError("Tesseract is not installed or not on PATH.") from exc
+    except Exception as exc:
+        raise ClaimExtractionError("The image could not be read.") from exc
+    if not text.strip():
+        raise ClaimExtractionError("No readable text could be extracted from the image.")
+    return text
+
+
+def _ocr_pdf(path):
+    try:
+        import fitz  # pymupdf
+        import pytesseract
+        from PIL import Image
+    except ImportError as exc:
+        raise ClaimExtractionError(
+            "No readable text in the PDF. Scanned PDFs need OCR (pymupdf, pytesseract, pillow)."
+        ) from exc
+    _configure_tesseract(pytesseract)
+    try:
+        parts = []
+        with fitz.open(str(path)) as pdf:
+            for page in pdf:
+                pix = page.get_pixmap(dpi=200)
+                image = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+                parts.append(pytesseract.image_to_string(image))
+    except pytesseract.TesseractNotFoundError as exc:
+        raise ClaimExtractionError("Tesseract is not installed or not on PATH.") from exc
+    except Exception as exc:
+        raise ClaimExtractionError("The scanned PDF could not be read.") from exc
+    text = "\n\n".join(p for p in parts if p.strip())
+    if not text.strip():
+        raise ClaimExtractionError("No readable text could be extracted from the PDF.")
+    return text
 
 
 def extract_claim_text(path, extension):

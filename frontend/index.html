@@ -212,6 +212,92 @@ tbody tr:hover { background:var(--page); }
   .card-head { flex-direction:column; }
 }
 @media (prefers-reduced-motion: reduce) { .meter-fill { transition:none; } }
+
+/* ============================================================ colour theme
+   Everything below only adds colour on top of the styles above.
+   To change the look, edit these accent colours. */
+:root {
+  --c1:#2a78d6; --c2:#8b5cf6; --c3:#ec4899; --c4:#f59e0b; --c5:#10b981; --c6:#06b6d4;
+  --grad:linear-gradient(135deg,#2a78d6,#8b5cf6);
+}
+
+/* page background: soft colour glows */
+body {
+  background:
+    radial-gradient(900px 420px at 100% -5%, color-mix(in srgb, var(--c2) 16%, transparent), transparent 70%),
+    radial-gradient(800px 420px at 0% 0%, color-mix(in srgb, var(--c1) 14%, transparent), transparent 70%),
+    radial-gradient(700px 400px at 60% 110%, color-mix(in srgb, var(--c3) 9%, transparent), transparent 70%),
+    var(--page);
+  background-attachment: fixed;
+}
+
+/* sidebar */
+.rail { background:linear-gradient(180deg,#312e81 0%,#1e40af 55%,#0e7490 100%); border-right:0; color:#fff; }
+.brand { color:#fff; }
+.brand small { color:rgba(255,255,255,.75); }
+.nav a { color:rgba(255,255,255,.82); }
+.nav a:hover { background:rgba(255,255,255,.14); color:#fff; }
+.nav a[aria-current="page"] { background:rgba(255,255,255,.2); color:#fff; border-left-color:#fbbf24; }
+.rail-foot { color:rgba(255,255,255,.75); }
+.rail .linkbtn { color:#fff; }
+@media (max-width: 900px) { .nav a[aria-current="page"] { border-bottom-color:#fbbf24; } }
+
+/* page titles */
+.view-head h1 { background:linear-gradient(90deg,var(--c1),var(--c2) 55%,var(--c3)); -webkit-background-clip:text; background-clip:text; color:transparent; width:fit-content; max-width:100%; }
+
+/* cards */
+.panel { box-shadow:0 1px 2px rgba(0,0,0,.04), 0 10px 28px -14px rgba(70,60,140,.28); transition:transform .15s ease, box-shadow .15s ease; }
+.grid2 > .panel, .assistant-grid > .panel { border-top:3px solid var(--c1); }
+.grid2 > .panel:nth-child(6n+2), .assistant-grid > .panel:nth-child(6n+2) { border-top-color:var(--c2); }
+.grid2 > .panel:nth-child(6n+3) { border-top-color:var(--c3); }
+.grid2 > .panel:nth-child(6n+4) { border-top-color:var(--c4); }
+.grid2 > .panel:nth-child(6n+5) { border-top-color:var(--c5); }
+.grid2 > .panel:nth-child(6n+6) { border-top-color:var(--c6); }
+.grid2 > .panel:hover { transform:translateY(-2px); box-shadow:0 14px 32px -14px rgba(70,60,140,.38); }
+
+/* KPI tiles */
+.kpi { background:linear-gradient(180deg, color-mix(in srgb, var(--k, var(--c1)) 13%, transparent), transparent 75%); border-top:3px solid var(--k, var(--c1)); }
+.kpi:nth-child(1) { --k:var(--c1); } .kpi:nth-child(2) { --k:#e11d48; }
+.kpi:nth-child(3) { --k:var(--c2); } .kpi:nth-child(4) { --k:#d97706; }
+.kpi-value { color:var(--k, var(--ink)); }
+
+/* bar charts: a different colour per bar */
+.hrow:nth-child(6n+1), .vcol:nth-child(6n+1) { --c:var(--c1); }
+.hrow:nth-child(6n+2), .vcol:nth-child(6n+2) { --c:var(--c2); }
+.hrow:nth-child(6n+3), .vcol:nth-child(6n+3) { --c:var(--c3); }
+.hrow:nth-child(6n+4), .vcol:nth-child(6n+4) { --c:var(--c4); }
+.hrow:nth-child(6n+5), .vcol:nth-child(6n+5) { --c:var(--c5); }
+.hrow:nth-child(6n+6), .vcol:nth-child(6n+6) { --c:var(--c6); }
+.hfill, .vfill { background:var(--c, var(--series)); }
+.hrow:hover .hfill, .hrow:focus-visible .hfill, .vcol:hover .vfill, .vcol:focus-visible .vfill { background:var(--c, var(--series)); filter:brightness(.88); }
+.line-host path { stroke:var(--c2); stroke-width:3; filter:drop-shadow(0 3px 5px color-mix(in srgb, var(--c2) 45%, transparent)); }
+.toggle:hover { color:var(--c2); border-color:var(--c2); }
+
+/* buttons */
+.btn.primary { background:var(--grad); border:0; color:#fff; box-shadow:0 6px 14px -6px color-mix(in srgb, var(--c2) 70%, transparent); transition:transform .12s ease, filter .12s ease; }
+.btn.primary:hover { background:var(--grad); filter:brightness(1.08); transform:translateY(-1px); }
+.btn:not(.primary):hover { border-color:var(--c2); color:var(--c2); }
+.suggestions button:hover { background:var(--grad); color:#fff; border-color:transparent; }
+
+/* forms */
+.fieldset legend { color:color-mix(in srgb, var(--c2) 80%, var(--ink)); }
+.field input:focus, .field select:focus, .chat-form textarea:focus { outline:none; border-color:var(--c2); box-shadow:0 0 0 3px color-mix(in srgb, var(--c2) 22%, transparent); }
+
+/* tables */
+thead th { background:color-mix(in srgb, var(--c2) 9%, transparent); color:var(--ink-2); }
+tbody tr:hover { background:color-mix(in srgb, var(--c1) 8%, transparent); }
+
+/* risk badges and the score meter */
+.badge { background:color-mix(in srgb, var(--c) 20%, var(--surface)); }
+.meter-track { background:linear-gradient(90deg, color-mix(in srgb, var(--good) 30%, var(--grid)), color-mix(in srgb, var(--warn) 30%, var(--grid)) 55%, color-mix(in srgb, var(--crit) 30%, var(--grid))); }
+.result { border-top:3px solid var(--c3); }
+.score-num { background:linear-gradient(135deg,var(--c1),var(--c3)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+/* policy assistant */
+.source-card { border-left-color:var(--c2); }
+.chat-message.user { background:color-mix(in srgb, var(--c2) 14%, var(--surface)); }
+.source-ref { color:var(--c2); }
+@media (prefers-reduced-motion: reduce) { .panel, .btn.primary { transition:none; } }
 </style>
 </head>
 <body>
@@ -1120,10 +1206,29 @@ function collect() {
   return claim;
 }
 
+function explainHtml(ex) {
+  if (!ex || !ex.factors || !ex.factors.length) return "";
+  const max = Math.max(...ex.factors.map(f => Math.abs(f.impact))) || 1;
+  const rows = ex.factors.map(f => {
+    const up = f.impact > 0;
+    const w = Math.max(4, Math.abs(f.impact) / max * 100);
+    const val = f.value === null ? "missing" : String(f.value);
+    return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 90px;gap:10px;align-items:center;margin:8px 0;">
+      <div>
+        <div style="font-size:14px;">${esc(f.feature.replace(/_/g, " "))} <span style="color:var(--ink-3)">= ${esc(val)}</span></div>
+        <div style="height:8px;background:var(--grid);border-radius:4px;margin-top:4px;"><div style="height:8px;width:${w}%;border-radius:4px;background:${up ? "var(--crit)" : "var(--good)"};"></div></div>
+      </div>
+      <div style="font-size:13px;text-align:right;color:var(--ink-2);">${up ? "▲ +" : "▼ "}${(f.impact * 100).toFixed(1)} pts</div>
+    </div>`;
+  }).join("");
+  return `<h3 style="margin-top:18px;">Why this score</h3>
+    <p class="assistant-note" style="margin:4px 0 6px;">Typical claim: ${pct(ex.base_value, 0)} fraud probability. Red factors push this claim's score up, green push it down (SHAP).</p>${rows}`;
+}
+
 async function scoreClaim(labelled = null) {
   const out = $("#result");
   try {
-    const res = (await api("/predict", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(collect()) })).results[0];
+    const res = (await api("/predict?explain=1", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(collect()) })).results[0];
     const p = res.fraud_probability, t = state.threshold;
     const [cls, ico, color, name] = { High:["high", "▲", "var(--crit)", "High risk"], Medium:["medium", "◆", "var(--warn)", "Medium risk"], Low:["low", "●", "var(--good)", "Low risk"] }[res.risk_level];
     const verdict = res.is_fraud
@@ -1139,6 +1244,7 @@ async function scoreClaim(labelled = null) {
       </div>
       <div class="scale"><span>0%</span><span>100%</span></div>
       <p class="verdict">${verdict}</p>
+      ${explainHtml(res.explanation)}
       ${labelled === null ? "" : `<p class="labelnote">In the dataset, this claim is labelled <b>${labelled ? "fraud" : "not fraud"}</b>. The model never saw this claim during training.</p>`}`;
     requestAnimationFrame(() => requestAnimationFrame(() => { $("#mfill").style.width = (p * 100) + "%"; }));
   } catch (e) { out.innerHTML = `<h2>Model result</h2><p class="hint">${esc(e.message)}</p>`; }

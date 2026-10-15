@@ -46,12 +46,14 @@ try:
     from api.anomaly_detection import detect_claim_anomalies
     from api.claim_extraction import ClaimDocumentStore, ClaimExtractionError
     from api.duplicate_detection import find_duplicate_claims
+    from api.explainability import explain_claim
     from api.policy_verification import verify_claim_against_policy
     from api.rag import DEFAULT_MIN_SCORE, DEFAULT_TOP_K, MAX_FILE_BYTES, DocumentError, RagStore
 except ImportError:                  # running directly as `python api/app.py`
     from anomaly_detection import detect_claim_anomalies
     from claim_extraction import ClaimDocumentStore, ClaimExtractionError
     from duplicate_detection import find_duplicate_claims
+    from explainability import explain_claim
     from policy_verification import verify_claim_against_policy
     from rag import DEFAULT_MIN_SCORE, DEFAULT_TOP_K, MAX_FILE_BYTES, DocumentError, RagStore
 
@@ -706,7 +708,8 @@ def predict():
         return jsonify(error=f"Send at most {MAX_BATCH} claims per request."), 400
 
     try:
-        probs = model.predict_proba(prepare(records))[:, 1]
+        X = prepare(records)
+        probs = model.predict_proba(X)[:, 1]
     except Exception as exc:           # bad values the model cannot handle
         return jsonify(error=f"Could not score the claim(s): {exc}"), 422
 
@@ -718,6 +721,15 @@ def predict():
         }
         for p in probs
     ]
+
+    # /predict?explain=1 adds a SHAP explanation (single claim only)
+    if request.args.get("explain") and len(records) == 1:
+        try:
+            results[0]["explanation"] = explain_claim(model, X, CATEGORICAL)
+        except Exception as exc:       # e.g. shap not installed: still return the score
+            results[0]["explanation"] = None
+            results[0]["explanation_error"] = f"{type(exc).__name__}: {exc}"
+
     return jsonify(threshold=THRESHOLD, count=len(results), results=results)
 
 
