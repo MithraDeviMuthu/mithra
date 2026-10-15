@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.DS_Store
+*.log
+venv/
+.pytest_cache/
+Insurance-Policy-/
+.vscode/
+Data-analytics-main/
+*.joblib
+*(1).csv
+data/rag/
