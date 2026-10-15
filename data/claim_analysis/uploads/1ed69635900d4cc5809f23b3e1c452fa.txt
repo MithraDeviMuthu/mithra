@@ -1,0 +1,6 @@
+Policy Number: POL-55
+Claim Number: CLM-55
+Provider Name: Sunrise Hospital
+Invoice Number: INV-55
+Claim Amount: $2,000.00
+Service Date: 2024-01-09

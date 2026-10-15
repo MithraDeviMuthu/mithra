@@ -1,0 +1,6 @@
+Policy Number: POL-42
+Claim Number: CLM-200
+Provider Name: North Valley Hospital
+Invoice Number: INV-55
+Claim Amount: $250
+Service Date: 2024-02-01

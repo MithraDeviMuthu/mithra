@@ -10,3 +10,6 @@ venv/
 Insurance-Policy-/
 .vscode/
 Data-analytics-main/
+*.joblib
+*(1).csv
+data/rag/
