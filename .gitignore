@@ -5,3 +5,8 @@ venv/
 .env
 .DS_Store
 *.log
+venv/
+.pytest_cache/
+Insurance-Policy-/
+.vscode/
+Data-analytics-main/
