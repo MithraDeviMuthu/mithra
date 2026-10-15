@@ -165,6 +165,33 @@ tbody tr:hover { background:var(--page); }
 .rowctl { display:flex; align-items:center; gap:10px; margin-bottom:12px; font-size:14px; color:var(--ink-2); }
 .rowctl select { height:34px; padding:0 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
 
+/* -------------------------------------------------------- policy assistant */
+.assistant-grid { display:grid; grid-template-columns:minmax(250px, .8fr) minmax(0, 1.6fr); gap:16px; align-items:start; }
+.assistant-panel h2 { font-size:18px; margin-bottom:12px; }
+.upload-form { display:grid; gap:10px; }
+.upload-form input[type="file"] { width:100%; font-size:13px; }
+.document-list { display:grid; gap:8px; margin-top:14px; }
+.document-row { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:8px; align-items:center; border-top:1px solid var(--grid); padding-top:9px; }
+.document-name { overflow-wrap:anywhere; font-size:13px; }
+.document-meta { display:block; color:var(--ink-3); font-size:12px; }
+.document-delete { border:0; background:none; color:var(--crit); text-decoration:underline; cursor:pointer; font-size:12px; padding:4px; }
+.assistant-note { color:var(--ink-3); font-size:13px; margin-top:12px; }
+.chat-log { display:grid; gap:12px; max-height:52vh; overflow-y:auto; margin-bottom:14px; }
+.chat-message { padding:12px 14px; border-radius:8px; background:var(--page); overflow-wrap:anywhere; white-space:pre-wrap; }
+.chat-message.user { background:color-mix(in srgb, var(--series) 11%, var(--surface)); }
+.chat-message h3 { font-size:14px; margin-bottom:5px; }
+.chat-message p { white-space:pre-wrap; }
+.chat-sources { display:grid; gap:8px; margin-top:12px; }
+.source-card { border-left:3px solid var(--series); background:var(--surface); padding:9px 11px; font-size:13px; }
+.source-ref { border:0; padding:0; background:none; text-align:left; color:var(--series-hover); text-decoration:underline; cursor:pointer; font:inherit; font-weight:600; }
+.source-card blockquote { margin:6px 0 0; color:var(--ink-2); white-space:pre-wrap; }
+.suggestions { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 12px; }
+.suggestions button { border:1px solid var(--line); border-radius:999px; background:var(--surface); padding:5px 10px; cursor:pointer; font-size:12px; }
+.chat-form { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+.chat-form textarea { min-height:74px; resize:vertical; padding:10px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
+.chat-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.assistant-error { color:var(--crit); font-size:13px; margin-top:8px; }
+.copy-answer { margin-top:9px; }
 /* ---------------------------------------------------------- responsive */
 @media (max-width: 900px) {
   .app { grid-template-columns:1fr; }
@@ -177,6 +204,7 @@ tbody tr:hover { background:var(--page); }
   .rail-foot .synthetic { display:none; }
   .checker { grid-template-columns:1fr; }
   .result { position:static; }
+  .assistant-grid { grid-template-columns:1fr; }
 }
 @media (max-width: 560px) {
   .hrow { grid-template-columns:minmax(0,40%) minmax(0,1fr) 46px; gap:8px; }
@@ -195,6 +223,8 @@ tbody tr:hover { background:var(--page); }
       <a href="#check" data-view="check">Check a claim</a>
       <a href="#claims" data-view="claims">Suspicious claims</a>
       <a href="#patterns" data-view="patterns">Patterns</a>
+      <a href="#investigation" data-view="investigation">Claim Investigation</a>
+      <a href="#assistant" data-view="assistant">Policy assistant</a>
     </nav>
     <div class="rail-foot">
       <span class="synthetic">Synthetic dataset. Results show the method, not real-world fraud rates.</span>
@@ -259,6 +289,88 @@ tbody tr:hover { background:var(--page); }
       </div>
       <div class="grid2" id="pat-grid" style="margin-top:0"></div>
     </section>
+
+    <section class="view" id="view-investigation" hidden>
+      <div class="view-head">
+        <h1>Claim Investigation</h1>
+        <p>Review extracted claim details, policy verification, duplicate candidates, and amount anomalies in one place. No result is treated as confirmed fraud; each finding remains a human-review item.</p>
+      </div>
+      <div class="grid2">
+        <section class="panel">
+          <h2>1. Claim extraction</h2>
+          <form id="investigation-upload-form" class="upload-form">
+            <label for="investigation-file">Upload a claim document (PDF, TXT, DOCX, or image if OCR is available)</label>
+            <input id="investigation-file" type="file" accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,image/png,image/jpeg,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+            <button class="btn primary" type="submit">Extract fields</button>
+          </form>
+          <p class="assistant-error" id="investigation-error" role="alert" hidden></p>
+          <div id="investigation-results" class="tablewrap"></div>
+        </section>
+        <section class="panel">
+          <h2>2. Review workflow</h2>
+          <div id="investigation-review"></div>
+        </section>
+      </div>
+      <div class="grid2" style="margin-top:16px;">
+        <section class="panel">
+          <h2>3. Policy verification</h2>
+          <div id="investigation-policy"></div>
+        </section>
+        <section class="panel">
+          <h2>4. Duplicate candidates</h2>
+          <div id="investigation-duplicates"></div>
+        </section>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <h2>5. Amount anomaly detection</h2>
+        <div id="investigation-anomalies"></div>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <h2>6. Human review summary</h2>
+        <div id="investigation-summary"></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-assistant" hidden>
+      <div class="view-head">
+        <h1>Policy Document Assistant</h1>
+        <p>Upload policy material and ask questions. Answers quote the retrieved evidence and identify the document and page or section that supports each passage. This is an information aid, not an official coverage or claims decision.</p>
+      </div>
+      <div class="assistant-grid">
+        <section class="panel assistant-panel" aria-labelledby="library-title">
+          <h2 id="library-title">Document library</h2>
+          <form id="upload-form" class="upload-form">
+            <label for="document-file">Add a PDF, TXT, or DOCX (20 MB maximum)</label>
+            <input id="document-file" type="file" accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+            <button class="btn primary" type="submit">Upload and process</button>
+          </form>
+          <p class="assistant-error" id="upload-error" role="alert" hidden></p>
+          <div id="document-list" class="document-list" aria-live="polite"></div>
+          <p class="assistant-note">Select one or more documents to limit a search. Document access is scoped to this browser session on this local instance.</p>
+        </section>
+        <section class="panel assistant-panel" aria-labelledby="chat-title">
+          <div class="card-head">
+            <div><h2 id="chat-title">Ask your documents</h2><p class="takeaway">Responses use exact retrieved passages; unsupported questions are clearly declined.</p></div>
+            <button class="btn" id="refresh-documents" type="button">Refresh library</button>
+          </div>
+          <div class="suggestions" aria-label="Suggested questions">
+            <button type="button" data-question="What is the waiting period for this policy?">Waiting period</button>
+            <button type="button" data-question="Which services or conditions are excluded?">Exclusions</button>
+            <button type="button" data-question="What deductible or co-payment applies?">Deductible / co-pay</button>
+            <button type="button" data-question="How do I submit a claim?">Claim procedure</button>
+          </div>
+          <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-relevant="additions">
+            <p class="assistant-note">Upload a document, select it in the library, then ask a question.</p>
+          </div>
+          <form id="chat-form" class="chat-form">
+            <textarea id="chat-question" maxlength="2000" placeholder="Ask a question about your selected documents…" aria-label="Question" required></textarea>
+            <button class="btn primary" id="ask-button" type="submit">Ask</button>
+          </form>
+          <p class="assistant-error" id="chat-error" role="alert" hidden></p>
+          <button class="btn" id="chat-retry" type="button" hidden>Retry question</button>
+        </section>
+      </div>
+    </section>
   </main>
 </div>
 <div class="tip" id="tip" role="tooltip"></div>
@@ -279,7 +391,7 @@ async function api(url, opts) {
   return j;
 }
 
-const state = { stats:null, threshold:0.3, options:null, base:{}, labelled:null, rendered:{} };
+const state = { stats:null, threshold:0.3, options:null, base:{}, labelled:null, rendered:{}, documents:[], selectedDocuments:new Set(), documentsInitialized:false, conversation:[], investigationClaims:[] };
 
 /* ------------------------------------------------------------ tooltip */
 const tip = $("#tip");
@@ -470,6 +582,461 @@ async function renderClaims() {
     </tbody></table>`;
 }
 
+function normalizeInvestigationClaim(row) {
+  const out = {};
+  const mapping = {
+    claim_id: "Claim_ID",
+    claim_number: "Claim_ID",
+    policy_number: "Policy_Number",
+    claim_amount: "Claim_Amount",
+    claim_date: "Claim_Date",
+    service_date: "Service_Date",
+    provider_name: "Provider_Name",
+    provider_type: "Provider_Type",
+    provider_specialty: "Provider_Specialty",
+    service_type: "Service_Type",
+    hospital_id: "Hospital_ID",
+    diagnosis_code: "Diagnosis_Code",
+    invoice_number: "Invoice_Number",
+    claim_status: "Claim_Status",
+  };
+  for (const [sourceKey, targetKey] of Object.entries(mapping)) {
+    if (row[sourceKey] !== undefined && row[sourceKey] !== null)
+      out[targetKey] = row[sourceKey];
+  }
+  return out;
+}
+
+function renderInvestigationStatus(host, title, message) {
+  host.innerHTML = `<div class="panel" style="padding:14px 16px;"><h3>${esc(title)}</h3><p class="assistant-note">${esc(message)}</p></div>`;
+}
+
+function renderInvestigationTable(rows, { emptyText, columns }) {
+  if (!rows.length) {
+    return `<p class="assistant-note">${esc(emptyText)}</p>`;
+  }
+  return `<table><thead><tr>${columns.map(col => `<th>${esc(col)}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+
+function renderInvestigationFieldRows(fields) {
+  const entries = [
+    ["policy_number", "Policy number"],
+    ["claim_number", "Claim number"],
+    ["invoice_number", "Invoice number"],
+    ["provider_name", "Provider name"],
+    ["claim_amount", "Claim amount"],
+    ["admission_date", "Admission date"],
+    ["discharge_date", "Discharge date"],
+    ["service_date", "Service date"],
+    ["invoice_date", "Invoice date"],
+    ["diagnosis", "Diagnosis"],
+    ["treatment", "Treatment"],
+  ];
+  return entries.map(([key, label]) => {
+    const value = fields[key] ?? "unavailable";
+    const escaped = esc(String(value));
+    return `<div class="field"><label for="investigation-field-${key}">${esc(label)}</label><input id="investigation-field-${key}" name="${key}" value="${escaped}" /></div>`;
+  }).join("");
+}
+
+async function renderInvestigationPage() {
+  const reviewHost = $("#investigation-results");
+  const reviewFormHost = $("#investigation-review");
+  const policyHost = $("#investigation-policy");
+  const duplicateHost = $("#investigation-duplicates");
+  const anomalyHost = $("#investigation-anomalies");
+  const summaryHost = $("#investigation-summary");
+  const errorHost = $("#investigation-error");
+  errorHost.hidden = true;
+  reviewFormHost.innerHTML = "<p class=\"assistant-note\">Loading claim review data…</p>";
+
+  try {
+    const [reviewData, claimDocuments, policies] = await Promise.all([
+      api("/api/review-claims?limit=25"),
+      api("/api/claim-documents"),
+      api("/api/documents"),
+    ]);
+
+    const reviewClaims = reviewData.claims || [];
+    state.investigationClaims = reviewClaims;
+    const claimDocs = claimDocuments.claim_documents || [];
+    const policyDocs = policies.documents || [];
+
+    if (!reviewClaims.length) {
+      reviewHost.innerHTML = `<p class="assistant-note">No claim rows are available yet.</p>`;
+    } else {
+      const rows = reviewClaims.map(claim => [
+        `<button class="linkbtn" type="button" data-investigation-claim="${esc(claim.claim_id || "unknown")}">${esc(claim.claim_id || "unknown")}</button>`,
+        esc(claim.provider_type || "unavailable"),
+        esc(claim.service_type || "unavailable"),
+        esc(claim.claim_amount == null ? "unavailable" : `$${Number(claim.claim_amount).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 })}`),
+      ]);
+      reviewHost.innerHTML = renderInvestigationTable(rows, {
+        emptyText: "No claims available to review.",
+        columns: ["Claim", "Provider", "Service", "Amount"],
+      });
+      reviewHost.querySelectorAll("[data-investigation-claim]").forEach(button => {
+        button.addEventListener("click", () => {
+          const claimId = button.getAttribute("data-investigation-claim");
+          const match = reviewClaims.find(claim => String(claim.claim_id || "") === String(claimId));
+          if (!match) return;
+          const fields = {
+            policy_number: match.policy_number || "unavailable",
+            claim_number: match.claim_id || "unavailable",
+            invoice_number: "unavailable",
+            provider_name: match.provider_type || "unavailable",
+            claim_amount: match.claim_amount == null ? "unavailable" : `$${Number(match.claim_amount).toFixed(2)}`,
+            admission_date: "unavailable",
+            discharge_date: "unavailable",
+            service_date: match.service_date || "unavailable",
+            invoice_date: "unavailable",
+            diagnosis: "unavailable",
+            treatment: "unavailable",
+          };
+          reviewFormHost.innerHTML = `<form id="investigation-review-form" class="fields-grid"><div class="rowctl"><h3>Review claim ${esc(claimId)}</h3></div>${renderInvestigationFieldRows(fields)}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div></form>`;
+          const form = $("#investigation-review-form");
+          form.addEventListener("submit", async event => {
+            event.preventDefault();
+            const payload = {};
+            form.querySelectorAll("input[name]").forEach(input => {
+              payload[input.name] = input.value.trim() || "unavailable";
+            });
+            const selectedDocument = claimDocs[0];
+            if (!selectedDocument) {
+              errorHost.textContent = "Upload a claim document before saving corrections.";
+              errorHost.hidden = false;
+              return;
+            }
+            try {
+              const response = await api(`/api/claim-documents/${encodeURIComponent(selectedDocument.id)}/review`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+              const doc = response.claim_document;
+              const corrected = doc.corrected_extraction || doc.raw_extraction || { fields: payload };
+              const values = corrected.fields || {};
+              reviewFormHost.innerHTML = `<form id="investigation-review-form" class="fields-grid"><div class="rowctl"><h3>Review claim ${esc(claimId)}</h3></div>${renderInvestigationFieldRows(values)}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div></form>`;
+              bindInvestigationReviewActions();
+            } catch (err) {
+              errorHost.textContent = err.message;
+              errorHost.hidden = false;
+            }
+          });
+          bindInvestigationReviewActions();
+        });
+      });
+    }
+
+    const policyOptions = policyDocs.filter(doc => doc.status === "ready").map(doc => `<option value="${esc(doc.id)}">${esc(doc.filename)}</option>`).join("");
+    policyHost.innerHTML = policyOptions
+      ? `<label for="investigation-policy-picker">Policy document</label><select id="investigation-policy-picker">${policyOptions}</select><button class="btn primary" type="button" id="run-policy-verification">Verify</button><div id="investigation-policy-results" style="margin-top:12px;"></div>`
+      : `<p class="assistant-note">Upload a policy document in the Policy Document Assistant tab before running verification.</p>`;
+    if (policyOptions) {
+      $("#run-policy-verification").addEventListener("click", async () => {
+        const form = $("#investigation-review-form");
+        if (!form) {
+          policyHost.querySelector("#investigation-policy-results").innerHTML = `<p class="assistant-note">Select a claim to review before verifying.</p>`;
+          return;
+        }
+        const fields = {};
+        form.querySelectorAll("input[name]").forEach(input => {
+          fields[input.name] = input.value.trim() || "unavailable";
+        });
+        const documentId = $("#investigation-policy-picker").value;
+        try {
+          const result = await api("/api/policy-verification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ policy_document_id: documentId, claim_fields: fields }),
+          });
+          const findings = result.findings || [];
+          const rows = findings.map(f => [
+            esc(f.claim_field || "unknown"),
+            esc(f.status || "Inconclusive"),
+            esc(f.document_name || "unavailable"),
+            esc(f.quote || "unavailable"),
+            esc(f.reason || "No reason recorded."),
+          ]);
+          $("#investigation-policy-results").innerHTML = renderInvestigationTable(rows, {
+            emptyText: "No policy evidence was available for this claim.",
+            columns: ["Claim field", "Status", "Document", "Quote", "Reason"],
+          });
+        } catch (err) {
+          $("#investigation-policy-results").innerHTML = `<p class="assistant-note">${esc(err.message)}</p>`;
+        }
+      });
+    }
+
+    const anomalyPayload = {
+      claims: reviewClaims.map(claim => ({
+        Claim_ID: claim.claim_id,
+        Claim_Amount: claim.claim_amount,
+        Provider_Type: claim.provider_type,
+        Service_Type: claim.service_type,
+        Policy_Number: claim.policy_number,
+      })),
+      group_by: ["Provider_Type", "Service_Type"],
+      min_group_size: 20,
+    };
+    try {
+      const anomaly = await api("/api/anomaly-detection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(anomalyPayload),
+      });
+      const anomalies = anomaly.anomalies || [];
+      if (!anomalies.length) {
+        anomalyHost.innerHTML = `<p class="assistant-note">No amount anomalies were found in this comparison set.</p>`;
+      } else {
+        anomalyHost.innerHTML = renderInvestigationTable(anomalies.map(item => [
+          esc(item.claim_id || "unknown"),
+          esc(item.severity || "Low"),
+          esc(item.group || "global baseline"),
+          `$${Number(item.claim_amount || 0).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 })}`,
+          `${Number(item.score || 0).toFixed(2)}`,
+          esc(item.reason || "Manual review recommended."),
+        ]), {
+          emptyText: "No anomalies flagged.",
+          columns: ["Claim ID", "Severity", "Comparison", "Amount", "Score", "Reason"],
+        });
+      }
+    } catch (err) {
+      anomalyHost.innerHTML = `<p class="assistant-note">${esc(err.message)}</p>`;
+    }
+
+    const duplicatePayload = {
+      claim: reviewClaims[0] ? normalizeInvestigationClaim(reviewClaims[0]) : {},
+      comparisons: reviewClaims.slice(1).map(normalizeInvestigationClaim),
+      exact_threshold: 0.96,
+      near_threshold: 0.82,
+    };
+    if (reviewClaims.length > 1) {
+      try {
+        const duplicate = await api("/api/duplicate-claims", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(duplicatePayload),
+        });
+        const candidates = duplicate.candidates || [];
+        if (!candidates.length) {
+          duplicateHost.innerHTML = `<p class="assistant-note">No duplicate or near-duplicate records were found.</p>`;
+        } else {
+          duplicateHost.innerHTML = renderInvestigationTable(candidates.map(item => [
+            esc(item.match_type || "near"),
+            `${Number(item.score || 0).toFixed(2)}`,
+            esc(item.reference_record && item.reference_record.Claim_ID ? item.reference_record.Claim_ID : "unknown"),
+            esc(item.reasons && item.reasons.length ? item.reasons.map(r => `${r.field}: ${r.details}`).join(" | ") : "No reason recorded."),
+          ]), {
+            emptyText: "No duplicates identified.",
+            columns: ["Match type", "Score", "Reference claim", "Reasons"],
+          });
+        }
+      } catch (err) {
+        duplicateHost.innerHTML = `<p class="assistant-note">${esc(err.message)}</p>`;
+      }
+    } else {
+      duplicateHost.innerHTML = `<p class="assistant-note">Add more claim records to compare duplicates.</p>`;
+    }
+
+    const summary = [];
+    const errors = [];
+    if (!claimDocs.length) errors.push("No claim document uploaded yet.");
+    if (!policyDocs.filter(doc => doc.status === "ready").length) errors.push("No policy document selected for verification.");
+    if (!reviewClaims.length) errors.push("No reviewable claim rows are available.");
+    summary.push(...(errors.length ? errors : ["Claim extraction, policy verification, duplicate review, and anomaly checks are available for human review."]));
+    const reviewPayload = {
+      title: "Human review summary",
+      details: summary,
+      nextSteps: [
+        "Confirm the extracted claim values before policy review.",
+        "Check evidence-backed policy mismatches and waiting periods with a human reviewer.",
+        "Review any duplicate or near-duplicate candidates before making a final decision.",
+        "Assess anomaly severities with the comparison group and document the limits of the model.",
+      ],
+    };
+    summaryHost.innerHTML = `<div class="assistant-note"><ul>${reviewPayload.details.map(item => `<li>${esc(item)}</li>`).join("")}</ul><p><strong>Recommended next steps</strong></p><ul>${reviewPayload.nextSteps.map(item => `<li>${esc(item)}</li>`).join("")}</ul></div>`;
+
+    if (!claimDocs.length && reviewClaims.length) {
+      const first = reviewClaims[0];
+      reviewFormHost.innerHTML = `<form id="investigation-review-form" class="fields-grid"><div class="rowctl"><h3>Review claim ${esc(first.claim_id || "unknown")}</h3></div>${renderInvestigationFieldRows({
+        policy_number: first.policy_number || "unavailable",
+        claim_number: first.claim_id || "unavailable",
+        invoice_number: "unavailable",
+        provider_name: first.provider_type || "unavailable",
+        claim_amount: first.claim_amount == null ? "unavailable" : `$${Number(first.claim_amount).toFixed(2)}`,
+        admission_date: "unavailable",
+        discharge_date: "unavailable",
+        service_date: first.service_date || "unavailable",
+        invoice_date: "unavailable",
+        diagnosis: "unavailable",
+        treatment: "unavailable",
+      })}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div></form>`;
+      bindInvestigationReviewActions();
+    }
+
+    if (claimDocs.length) {
+      const nextDoc = claimDocs[0];
+      const raw = nextDoc.corrected_extraction ? JSON.parse(nextDoc.corrected_extraction) : nextDoc.raw_extraction ? JSON.parse(nextDoc.raw_extraction) : { fields: {} };
+      const fields = raw.fields || {};
+      reviewFormHost.innerHTML = `<form id="investigation-review-form" class="fields-grid"><div class="rowctl"><h3>Review claim document ${esc(nextDoc.filename || nextDoc.id)}</h3></div>${renderInvestigationFieldRows(fields)}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div></form>`;
+      bindInvestigationReviewActions();
+    }
+    attachInvestigationUploadHandlers();
+  } catch (error) {
+    reviewHost.innerHTML = `<p class="assistant-note">${esc(error.message)}</p>`;
+    policyHost.innerHTML = `<p class="assistant-note">${esc(error.message)}</p>`;
+    duplicateHost.innerHTML = `<p class="assistant-note">${esc(error.message)}</p>`;
+    anomalyHost.innerHTML = `<p class="assistant-note">${esc(error.message)}</p>`;
+    summaryHost.innerHTML = `<p class="assistant-note">${esc(error.message)}</p>`;
+  }
+}
+
+function bindInvestigationReviewActions() {
+  const form = $("#investigation-review-form");
+  if (!form) return;
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const claimDocId = form.dataset.claimDocId;
+    const payload = {};
+    form.querySelectorAll("input[name]").forEach(input => {
+      payload[input.name] = input.value.trim() || "unavailable";
+    });
+    if (!claimDocId) {
+      const resultsHost = $("#investigation-policy-results");
+      if (resultsHost) resultsHost.innerHTML = `<p class="assistant-note">Upload or select a claim document before saving corrections.</p>`;
+      return;
+    }
+    try {
+      const response = await api(`/api/claim-documents/${encodeURIComponent(claimDocId)}/review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const corrected = response.claim_document.corrected_extraction || response.claim_document.raw_extraction || { fields: payload };
+      form.innerHTML = `${renderInvestigationFieldRows(corrected.fields || payload)}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div>`;
+      form.dataset.claimDocId = claimDocId;
+      bindInvestigationReviewActions();
+    } catch (error) {
+      $("#investigation-error").textContent = error.message;
+      $("#investigation-error").hidden = false;
+    }
+  });
+  const verifyButton = $("#investigation-verify-button");
+  if (verifyButton) {
+    verifyButton.addEventListener("click", async () => {
+      const selector = $("#investigation-policy-picker");
+      if (!selector || !selector.value) {
+        const policyResults = $("#investigation-policy-results");
+        if (policyResults) policyResults.innerHTML = `<p class="assistant-note">Upload a policy document first.</p>`;
+        return;
+      }
+      const fields = {};
+      form.querySelectorAll("input[name]").forEach(input => {
+        fields[input.name] = input.value.trim() || "unavailable";
+      });
+      try {
+        const result = await api("/api/policy-verification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ policy_document_id: selector.value, claim_fields: fields }),
+        });
+        const findings = result.findings || [];
+        const resultsHost = $("#investigation-policy-results");
+        if (!resultsHost) return;
+        if (!findings.length) {
+          resultsHost.innerHTML = `<p class="assistant-note">No policy evidence was found for this claim.</p>`;
+          return;
+        }
+        resultsHost.innerHTML = renderInvestigationTable(findings.map(item => [
+          esc(item.claim_field || "unknown"),
+          esc(item.status || "Inconclusive"),
+          esc(item.document_name || "unavailable"),
+          esc(item.quote || "unavailable"),
+          esc(item.reason || "No reason recorded."),
+        ]), {
+          emptyText: "No policy findings.",
+          columns: ["Claim field", "Status", "Document", "Quote", "Reason"],
+        });
+      } catch (err) {
+        const resultsHost = $("#investigation-policy-results");
+        if (resultsHost) resultsHost.innerHTML = `<p class="assistant-note">${esc(err.message)}</p>`;
+      }
+    });
+  }
+
+  const duplicateButton = $("#investigation-duplicate-button");
+  if (duplicateButton) {
+    duplicateButton.addEventListener("click", async () => {
+      const fields = {};
+      form.querySelectorAll("input[name]").forEach(input => {
+        fields[input.name] = input.value.trim() || "unavailable";
+      });
+      const comparisons = (state.investigationClaims || []).map(normalizeInvestigationClaim);
+      try {
+        const result = await api("/api/duplicate-claims", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ claim: fields, comparisons }),
+        });
+        const candidates = result.candidates || [];
+        const host = $("#investigation-duplicates");
+        if (!candidates.length) {
+          host.innerHTML = `<p class="assistant-note">No duplicate or near-duplicate records were flagged.</p>`;
+          return;
+        }
+        host.innerHTML = renderInvestigationTable(candidates.map(item => [
+          esc(item.match_type || "near"),
+          `${Number(item.score || 0).toFixed(2)}`,
+          esc(item.reference_record && item.reference_record.Claim_ID ? item.reference_record.Claim_ID : "unknown"),
+          esc(item.reasons && item.reasons.length ? item.reasons.map(r => `${r.field}: ${r.details}`).join(" | ") : "No reason recorded."),
+        ]), {
+          emptyText: "No duplicate candidates.",
+          columns: ["Match type", "Score", "Reference claim", "Reasons"],
+        });
+      } catch (err) {
+        const host = $("#investigation-duplicates");
+        host.innerHTML = `<p class="assistant-note">${esc(err.message)}</p>`;
+      }
+    });
+  }
+}
+
+function attachInvestigationUploadHandlers() {
+  const form = $("#investigation-upload-form");
+  if (!form || form.dataset.bound === "true") return;
+  form.dataset.bound = "true";
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const input = $("#investigation-file");
+    if (!input || !input.files || !input.files.length) {
+      $("#investigation-error").textContent = "Choose a PDF, TXT, DOCX, or image file to extract.";
+      $("#investigation-error").hidden = false;
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", input.files[0]);
+    try {
+      const result = await api("/api/claim-documents", { method: "POST", body: formData });
+      const doc = result.claim_document;
+      if (!doc || !doc.id) {
+        throw new Error("The claim document was uploaded but no identifier was returned.");
+      }
+      const detail = await api(`/api/claim-documents/${encodeURIComponent(doc.id)}`);
+      const raw = detail.claim_document;
+      const extracted = raw.corrected_extraction || raw.raw_extraction || { fields: {} };
+      const fields = extracted.fields || {};
+      $("#investigation-review").innerHTML = `<form id="investigation-review-form" class="fields-grid" data-claim-doc-id="${esc(doc.id)}"><div class="rowctl"><h3>Extracted values</h3></div>${renderInvestigationFieldRows(fields)}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div></form>`;
+      bindInvestigationReviewActions();
+      $("#investigation-error").hidden = true;
+      await renderInvestigationPage();
+    } catch (error) {
+      $("#investigation-error").textContent = error.message;
+      $("#investigation-error").hidden = false;
+    }
+  });
+}
+
 /* ------------------------------------------------------ claim checker */
 const FORM = [
   ["Claim", [
@@ -578,7 +1145,7 @@ async function scoreClaim(labelled = null) {
 }
 
 /* --------------------------------------------------------- routing */
-const VIEWS = ["overview", "check", "claims", "patterns"];
+const VIEWS = ["overview", "check", "claims", "patterns", "investigation", "assistant"];
 async function show(name) {
   if (!VIEWS.includes(name)) name = "overview";
   VIEWS.forEach(v => { $(`#view-${v}`).hidden = v !== name; });
@@ -591,11 +1158,174 @@ async function show(name) {
     if (name === "patterns" && state.stats) renderPatterns();
     if (name === "claims") await renderClaims();
     if (name === "check" && !state.rendered.check) { state.rendered.check = true; buildForm(); await loadSample(true); }
+    if (name === "investigation") await renderInvestigationPage();
+    if (name === "assistant") await refreshDocuments();
   } catch (e) { showError(e.message); }
 }
 addEventListener("hashchange", () => show(location.hash.slice(1)));
 let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { const v = location.hash.slice(1) || "overview"; if (v === "overview" || v === "patterns") show(v); }, 150); });
 ["#limit", "#scope"].forEach(id => $(id).addEventListener("change", () => renderClaims().catch(e => showError(e.message))));
+
+/* ----------------------------------------------------- policy assistant */
+function selectedDocumentIds() {
+  return [...state.selectedDocuments].filter(id => state.documents.some(doc => doc.id === id && doc.status === "ready"));
+}
+
+function renderDocuments() {
+  const host = $("#document-list");
+  if (!state.documents.length) {
+    host.innerHTML = `<p class="assistant-note">No documents uploaded yet.</p>`;
+    return;
+  }
+  host.innerHTML = state.documents.map(doc => `
+    <div class="document-row">
+      <input type="checkbox" data-select-document="${esc(doc.id)}" aria-label="Include ${esc(doc.filename)} in search" ${state.selectedDocuments.has(doc.id) ? "checked" : ""} ${doc.status !== "ready" ? "disabled" : ""}>
+      <span class="document-name">${esc(doc.filename)}<span class="document-meta">${esc(doc.status)}${doc.page_count ? ` · ${doc.page_count} pages` : ""}${doc.chunk_count ? ` · ${doc.chunk_count} passages` : ""}${doc.error ? ` · ${esc(doc.error)}` : ""}</span></span>
+      <button type="button" class="document-delete" data-delete-document="${esc(doc.id)}" aria-label="Delete ${esc(doc.filename)}">Delete</button>
+    </div>`).join("");
+  host.querySelectorAll("[data-select-document]").forEach(control => control.addEventListener("change", () => {
+    if (control.checked) state.selectedDocuments.add(control.dataset.selectDocument);
+    else state.selectedDocuments.delete(control.dataset.selectDocument);
+  }));
+  host.querySelectorAll("[data-delete-document]").forEach(button => button.addEventListener("click", () => deleteDocument(button.dataset.deleteDocument)));
+}
+
+async function refreshDocuments() {
+  state.documents = (await api("/api/documents")).documents;
+  const available = new Set(state.documents.filter(doc => doc.status === "ready").map(doc => doc.id));
+  state.selectedDocuments = new Set([...state.selectedDocuments].filter(id => available.has(id)));
+  if (!state.documentsInitialized) {
+    state.selectedDocuments = available;
+    state.documentsInitialized = true;
+  }
+  renderDocuments();
+}
+
+async function deleteDocument(id) {
+  try {
+    await api(`/api/documents/${encodeURIComponent(id)}`, { method:"DELETE" });
+    state.documents = state.documents.filter(doc => doc.id !== id);
+    state.selectedDocuments.delete(id);
+    renderDocuments();
+  } catch (error) {
+    $("#upload-error").textContent = error.message;
+    $("#upload-error").hidden = false;
+  }
+}
+
+function appendChatMessage(role, text, sources = []) {
+  const entry = { role, text, sources };
+  state.conversation.push(entry);
+  const log = $("#chat-log");
+  if (state.conversation.length === 1) log.innerHTML = "";
+  const message = document.createElement("article");
+  message.className = `chat-message ${role}`;
+  const heading = document.createElement("h3");
+  heading.textContent = role === "user" ? "You" : "Document-grounded answer";
+  const body = document.createElement("p");
+  body.textContent = text;
+  message.append(heading, body);
+  if (role === "assistant") {
+    if (sources.length) {
+      const refs = document.createElement("div");
+      refs.className = "chat-sources";
+      refs.innerHTML = sources.map((source, index) => `
+        <div class="source-card">
+          <button class="source-ref" type="button" data-source-document="${esc(source.document_id)}">[${index + 1}] ${esc(source.filename)}${source.page ? ` · page ${source.page}` : source.section ? ` · ${esc(source.section)}` : ""}</button>
+          <blockquote>${esc(source.excerpt)}</blockquote>
+        </div>`).join("");
+      message.append(refs);
+      refs.querySelectorAll("[data-source-document]").forEach(button => button.addEventListener("click", () => {
+        const id = button.dataset.sourceDocument;
+        state.selectedDocuments.add(id);
+        renderDocuments();
+        $("#document-list").scrollIntoView({ behavior:"smooth", block:"nearest" });
+      }));
+    }
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.className = "btn copy-answer";
+    copy.textContent = "Copy answer";
+    copy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        copy.textContent = "Copied";
+      } catch (_) {
+        copy.textContent = "Copy unavailable";
+      }
+    });
+    message.append(copy);
+  }
+  log.append(message);
+  log.scrollTop = log.scrollHeight;
+}
+
+$("#upload-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const input = $("#document-file"), submit = event.currentTarget.querySelector("button[type=submit]");
+  $("#upload-error").hidden = true;
+  if (!input.files.length) return;
+  submit.disabled = true;
+  submit.textContent = "Processing document…";
+  const form = new FormData();
+  form.append("file", input.files[0]);
+  try {
+    const result = await api("/api/documents", { method:"POST", body:form });
+    state.selectedDocuments.add(result.document.id);
+    input.value = "";
+    await refreshDocuments();
+    state.selectedDocuments.add(result.document.id);
+    renderDocuments();
+  } catch (error) {
+    $("#upload-error").textContent = error.message;
+    $("#upload-error").hidden = false;
+    await refreshDocuments();
+  } finally {
+    submit.disabled = false;
+    submit.textContent = "Upload and process";
+  }
+});
+
+$("#chat-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const input = $("#chat-question"), button = $("#ask-button"), question = input.value.trim();
+  if (!question) return;
+  $("#chat-error").hidden = true;
+  $("#chat-retry").hidden = true;
+  appendChatMessage("user", question);
+  button.disabled = true;
+  button.textContent = "Searching…";
+  try {
+    const result = await api("/api/chat", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({ question, document_ids:selectedDocumentIds() }),
+    });
+    appendChatMessage("assistant", result.answer, result.sources);
+    input.value = "";
+  } catch (error) {
+    $("#chat-error").textContent = error.message;
+    $("#chat-error").hidden = false;
+    $("#chat-retry").hidden = false;
+  } finally {
+    button.disabled = false;
+    button.textContent = "Ask";
+    input.focus();
+  }
+});
+
+$("#chat-retry").addEventListener("click", () => $("#chat-form").requestSubmit());
+
+$(".suggestions").addEventListener("click", event => {
+  const question = event.target.dataset.question;
+  if (!question) return;
+  $("#chat-question").value = question;
+  $("#chat-question").focus();
+});
+$("#refresh-documents").addEventListener("click", () => refreshDocuments().catch(error => {
+  $("#upload-error").textContent = error.message;
+  $("#upload-error").hidden = false;
+}));
 
 function showError(msg) {
   $("#banner").innerHTML = `<div class="banner" role="alert"><b>Could not reach the API.</b> ${esc(msg)}<br>
