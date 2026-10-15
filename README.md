@@ -1,4 +1,4 @@
-# AI-Based Insurance Policy Analytics System
+#SecureScore: Intelligent verification System
 
 Fraud-risk scoring and an interactive dashboard for health insurance claims,
 with a local, evidence-citing assistant for policy documents.
