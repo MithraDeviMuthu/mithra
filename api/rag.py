@@ -5,6 +5,7 @@ import re
 import sqlite3
 import uuid
 import zipfile
+from collections import Counter
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -231,6 +232,24 @@ def _answer_from_evidence(question, sources):
     )
 
 
+def _summarize(text, n=5):
+    """Pick the n most representative sentences (extractive summary)."""
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+|\n+", text) if len(s.strip()) > 25]
+    unique, seen = [], set()
+    for s in sentences:                      # chunks overlap, so drop repeated sentences
+        if s.lower() not in seen and not s.lower().startswith("summarize"):
+            seen.add(s.lower())
+            unique.append(s)
+    freq = Counter(re.findall(r"[a-z0-9]{4,}", text.lower()))
+
+    def score(s):
+        words = re.findall(r"[a-z0-9]{4,}", s.lower())
+        return sum(freq[w] for w in words) / (len(words) or 1)
+
+    top = set(sorted(unique, key=score, reverse=True)[:n])
+    return [s for s in unique if s in top]   # keep original order
+
+
 class RagStore:
     def __init__(self, data_dir):
         self.data_dir = Path(data_dir).resolve()
@@ -380,6 +399,21 @@ class RagStore:
         if not selected_ids:
             return {
                 "answer": "The available documents do not provide sufficient information to answer this question.",
+                "sources": [],
+                "retrieved_count": 0,
+            }
+
+        # Summary questions: summarize the whole document instead of retrieving chunks
+        if "summar" in question.lower():
+            marks = ",".join("?" for _ in selected_ids)
+            with self._connect() as connection:
+                rows = connection.execute(
+                    f"SELECT content FROM chunks WHERE document_id IN ({marks}) ORDER BY rowid",
+                    selected_ids,
+                ).fetchall()
+            bullets = _summarize("\n".join(r["content"] for r in rows))
+            return {
+                "answer": "\n".join(f"• {b}" for b in bullets) or "No summary could be generated.",
                 "sources": [],
                 "retrieved_count": 0,
             }

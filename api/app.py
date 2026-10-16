@@ -924,6 +924,41 @@ def api_loss_ratio():
     return jsonify(_cache["loss_ratio"])
 
 
+@app.get("/api/analytics")
+def api_analytics():
+    """Monthly claim activity + Random Forest risk scores + held-out evaluation metrics."""
+    missing = need_data()
+    if missing:
+        return missing
+    if "analytics" not in _cache:
+        d = DATA.dropna(subset=["Claim_Date"])
+        g = d.groupby(d["Claim_Date"].dt.to_period("M"))["Is_Fraudulent"].agg(["size", "mean"])
+        monthly = [{"month": str(p), "claims": int(r["size"]), "fraud_rate": round(float(r["mean"]), 4)}
+                   for p, r in g.iterrows()]
+
+        model_info = None
+        try:
+            held = scored_data()
+            held = held[held["is_test"]]
+            flagged = held["fraud_prob"] >= THRESHOLD
+            actual = held["Is_Fraudulent"] == 1
+            caught = int((flagged & actual).sum())
+            levels = held["fraud_prob"].map(risk_level).value_counts()
+            model_info = {
+                "threshold": THRESHOLD,
+                "n": int(len(held)),
+                "flagged": int(flagged.sum()),
+                "precision": round(caught / max(int(flagged.sum()), 1), 4),
+                "recall": round(caught / max(int(actual.sum()), 1), 4),
+                "avg_risk_score": round(float(held["fraud_prob"].mean()), 4),
+                "risk_levels": {k: int(levels.get(k, 0)) for k in ("High", "Medium", "Low")},
+            }
+        except RuntimeError:           # fraud model not trained yet: still return monthly data
+            pass
+        _cache["analytics"] = {"monthly": monthly, "model": model_info}
+    return jsonify(_cache["analytics"])
+
+
 @app.get("/api/options")
 def api_options():
     missing = need_data()

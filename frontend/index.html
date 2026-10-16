@@ -986,14 +986,26 @@
       async function loadAnalytics() {
         try {
           const data = await api('/api/analytics');
+          const m = data.model;
+          const monthly = (data.monthly || []).slice(-5).map(r =>
+            `<div class="list-item"><div>${r.month}</div><strong>${whole(r.claims)} claims</strong><span class="badge neutral">Fraud ${pct(r.fraud_rate)}</span></div>`
+          ).join('') || '<div class="muted">No monthly data.</div>';
+          const risk = m ? Object.entries(m.risk_levels).map(([k, v]) =>
+            `<div class="list-item"><div>${k} risk</div><strong>${whole(v)} claims</strong></div>`
+          ).join('') + `<div class="list-item"><div>Average risk score</div><strong>${pct(m.avg_risk_score)}</strong></div>`
+            : '<div class="muted">Fraud model not loaded.</div>';
+          const evalRows = m ? `
+            <div class="list-item"><div>Held-out claims</div><strong>${whole(m.n)}</strong></div>
+            <div class="list-item"><div>Flagged at ${pct(m.threshold)} threshold</div><strong>${whole(m.flagged)}</strong></div>
+            <div class="list-item"><div>Precision</div><strong>${pct(m.precision)}</strong></div>
+            <div class="list-item"><div>Recall</div><strong>${pct(m.recall)}</strong></div>`
+            : '<div class="muted">Fraud model not loaded.</div>';
           $('#analyticsCards').innerHTML = `
-            <div class="card">
-              <h2>Monthly Trend Volume</h2>
-              <div class="list">
-                ${(data.monthly || []).slice(-5).map(m => `<div class="list-item"><div>${m.month}</div><strong>${m.claims} claims</strong></div>`).join('')}
-              </div>
-            </div>
-          `;
+            <div class="cards">
+              <div class="card"><h2>Monthly Trend Volume</h2><div class="list">${monthly}</div></div>
+              <div class="card"><h2>Random Forest Risk Scores</h2><div class="list">${risk}</div></div>
+              <div class="card"><h2>Held-out Evaluation</h2><div class="list">${evalRows}</div></div>
+            </div>`;
         } catch (e) {
           $('#analyticsCards').innerHTML = '<div class="muted">Analytics metrics unavailable.</div>';
         }
