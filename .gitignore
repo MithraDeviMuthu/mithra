@@ -13,3 +13,5 @@ Data-analytics-main/
 *.joblib
 *(1).csv
 data/rag/
+
+ml/claim status model.joblib

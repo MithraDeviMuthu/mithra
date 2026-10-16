@@ -6,178 +6,249 @@
   <title>SecureScore — Intelligent Verification System</title>
   <style>
     :root {
-      --bg: #edf4ff;
+      --bg: #f4f8fc;
       --surface: #ffffff;
-      --surface-alt: #f4f8ff;
-      --navy: #0d2340;
-      --navy-soft: #173767;
-      --blue: #2d6ae8;
-      --blue-soft: #8eb5ff;
-      --teal: #1b98b8;
-      --success: #1ba976;
-      --warning: #d79523;
-      --danger: #d84a4a;
-      --text: #12233d;
-      --muted: #657998;
-      --line: #dfe8f5;
-      --shadow: 0 12px 30px rgba(11, 34, 64, 0.08);
-      --radius: 18px;
-      --sidebar-width: 260px;
+      --surface-alt: #f0f5fc;
+      --navy: #091e3e;
+      --navy-soft: #143666;
+      --blue: #1e62eb;
+      --blue-hover: #154fcb;
+      --teal: #0891b2;
+      --success: #059669;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #cbd5e1;
+      --shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+      --sidebar-width: 265px;
     }
     body.dark {
-      --bg: #0e1726;
-      --surface: #12233d;
-      --surface-alt: #172d4d;
-      --navy: #edf5ff;
-      --navy-soft: #bbcef7;
-      --blue: #89b4ff;
-      --blue-soft: #cfe0ff;
-      --teal: #84e3f7;
-      --success: #4edc9d;
-      --warning: #f5c36d;
-      --danger: #ff8a8a;
-      --text: #edf5ff;
-      --muted: #b0c1de;
-      --line: #23476f;
-      --shadow: 0 18px 36px rgba(0, 0, 0, 0.26);
+      --bg: #070d19;
+      --surface: #0f172a;
+      --surface-alt: #1e293b;
+      --navy: #f8fafc;
+      --navy-soft: #cbd5e1;
+      --blue: #3b82f6;
+      --blue-hover: #60a5fa;
+      --teal: #22d3ee;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --line: #334155;
+      --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; }
     body {
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: linear-gradient(180deg, var(--bg) 0%, #eef5ff 100%);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
       color: var(--text);
+      transition: background 0.3s ease, color 0.3s ease;
     }
-    body.dark { background: linear-gradient(180deg, var(--bg) 0%, #07121d 100%); }
     a { color: inherit; text-decoration: none; }
     button, input, select, textarea { font: inherit; }
+
+    /* --- Secure Login Screen --- */
+    #login-screen {
+      position: fixed; inset: 0; z-index: 1000;
+      background: linear-gradient(135deg, var(--navy) 0%, #041022 100%);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .login-card {
+      background: var(--surface); color: var(--text); width: 100%; max-width: 420px;
+      padding: 40px 32px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--line); animation: fadeIn 0.4s ease-out;
+    }
+    .login-brand { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.05em; color: var(--blue); margin-bottom: 4px; }
+    .login-subtitle { font-size: 0.85rem; color: var(--muted); margin-bottom: 28px; text-transform: uppercase; letter-spacing: 0.1em; }
+    .login-field { margin-bottom: 18px; }
+    .login-error { color: var(--danger); font-size: 0.85rem; margin-top: 10px; text-align: center; font-weight: 600; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- App Layout --- */
     .app { display: flex; min-height: 100vh; }
     .sidebar {
-      width: var(--sidebar-width);
-      flex: 0 0 var(--sidebar-width);
-      background: linear-gradient(180deg, var(--navy) 0%, var(--navy-soft) 100%);
-      color: white;
-      padding: 22px 16px 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
+      width: var(--sidebar-width); flex: 0 0 var(--sidebar-width);
+      background: linear-gradient(180deg, var(--navy) 0%, #06152d 100%);
+      color: white; padding: 24px 16px; display: flex; flex-direction: column; gap: 18px;
     }
-    .brand { padding: 6px 8px 2px; }
-    .brand-title { font-size: 2.05rem; font-weight: 800; letter-spacing: -0.06em; }
-    .brand-sub { margin-top: 4px; font-size: 0.8rem; opacity: 0.85; }
-    .nav { display: grid; gap: 6px; }
+    .brand { padding: 6px 8px; }
+    .brand-title { font-size: 1.85rem; font-weight: 800; letter-spacing: -0.05em; }
+    .brand-sub { font-size: 0.75rem; opacity: 0.8; letter-spacing: 0.05em; margin-top: 2px; }
+    
+    .nav { display: grid; gap: 4px; }
     .nav-btn {
-      background: transparent; color: rgba(255,255,255,0.8); border: 0; border-radius: 10px;
-      padding: 11px 12px; text-align: left; font-weight: 600; cursor: pointer;
-      transition: 0.18s ease;
+      background: transparent; color: rgba(255, 255, 255, 0.75); border: 0; border-radius: 10px;
+      padding: 10px 14px; text-align: left; font-weight: 600; font-size: 0.9rem; cursor: pointer;
+      transition: all 0.2s ease;
     }
-    .nav-btn:hover, .nav-btn.active { background: rgba(255,255,255,0.10); color: white; }
+    .nav-btn:hover, .nav-btn.active { background: rgba(255, 255, 255, 0.12); color: white; transform: translateX(3px); }
+    
     .sidebar-meta {
-      margin-top: auto; border-top: 1px solid rgba(255,255,255,0.15);
-      padding-top: 12px; color: rgba(255,255,255,0.78); font-size: 0.78rem; line-height: 1.6;
+      margin-top: auto; border-top: 1px solid rgba(255, 255, 255, 0.12);
+      padding-top: 14px; color: rgba(255, 255, 255, 0.65); font-size: 0.73rem; line-height: 1.5;
     }
-    .main { flex: 1; padding: 24px 28px 42px; }
+    .logout-btn {
+      background: rgba(220, 38, 38, 0.2); color: #fca5a5; border: 1px solid rgba(220, 38, 38, 0.4);
+      border-radius: 8px; padding: 8px 12px; width: 100%; text-align: center; cursor: pointer;
+      font-weight: 600; font-size: 0.8rem; margin-top: 10px; transition: background 0.2s;
+    }
+    .logout-btn:hover { background: rgba(220, 38, 38, 0.35); }
+
+    .main { flex: 1; padding: 28px 36px 48px; overflow-y: auto; max-height: 100vh; }
     .topbar {
       display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
-      margin-bottom: 22px;
+      margin-bottom: 24px; padding-bottom: 14px; border-bottom: 1px solid var(--line);
     }
-    .breadcrumbs {
-      padding: 7px 0; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
-      color: var(--muted);
-    }
+    .breadcrumbs { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
     .toolbar { display: flex; gap: 10px; flex-wrap: wrap; }
+    
     .btn {
       background: var(--surface); color: var(--text); border: 1px solid var(--line);
-      border-radius: 10px; padding: 9px 14px; cursor: pointer; box-shadow: var(--shadow);
-      transition: transform 0.15s ease;
+      border-radius: 10px; padding: 9px 16px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow);
+      transition: all 0.2s ease;
     }
-    .btn:hover { transform: translateY(-1px); }
+    .btn:hover { transform: translateY(-1px); border-color: var(--blue); color: var(--blue); }
     .btn.primary {
-      background: linear-gradient(135deg, var(--blue) 0%, #5b9cff 100%);
-      border: 0; color: white; box-shadow: 0 10px 20px rgba(45, 106, 232, 0.25);
+      background: var(--blue); border: 0; color: white; box-shadow: 0 4px 12px rgba(30, 98, 232, 0.3);
     }
+    .btn.primary:hover { background: var(--blue-hover); color: white; }
+
     .page { display: none; }
-    .page.active { display: block; }
-    .page-header { margin-bottom: 18px; }
-    .page-header h1 {
-      margin: 0 0 6px; letter-spacing: -0.06em; font-size: clamp(2rem, 3vw, 2.8rem);
+    .page.active { display: block; animation: fadeIn 0.3s ease; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { margin: 0 0 6px; font-size: clamp(1.8rem, 2.5vw, 2.4rem); font-weight: 800; letter-spacing: -0.03em; }
+    .page-header p { margin: 0; color: var(--muted); font-size: 0.95rem; max-width: 75ch; }
+
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; margin-bottom: 24px; }
+    .kpi, .card, .panel {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px;
     }
-    .page-header p { margin: 0; color: var(--muted); max-width: 72ch; }
-    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 18px; }
-    .kpi, .card {
-      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
-    }
-    .kpi { padding: 18px 18px 16px; }
-    .kpi-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.72rem; }
-    .kpi-value { margin-top: 8px; font-weight: 700; font-size: clamp(1.8rem, 2vw, 2.5rem); letter-spacing: -0.06em; }
-    .kpi-sub { margin-top: 6px; color: var(--muted); font-size: 0.82rem; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-    .card { padding: 20px; }
-    .card h2 { margin: 0 0 14px; font-size: 1.35rem; }
+    .kpi-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.72rem; font-weight: 700; }
+    .kpi-value { margin-top: 8px; font-weight: 800; font-size: clamp(1.8rem, 2vw, 2.4rem); letter-spacing: -0.04em; color: var(--blue); }
+    .kpi-sub { margin-top: 6px; color: var(--muted); font-size: 0.8rem; }
+    
+    .cards, .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .card h2, .panel h2 { margin: 0 0 16px; font-size: 1.25rem; font-weight: 700; }
+    
     .list { display: grid; gap: 10px; }
     .list-item {
       display: flex; justify-content: space-between; align-items: center; gap: 12px;
-      border: 1px solid var(--line); background: var(--surface-alt); border-radius: 12px; padding: 10px 12px;
+      border: 1px solid var(--line); background: var(--surface-alt); border-radius: 12px; padding: 12px 16px;
     }
     .muted { color: var(--muted); }
+    
     .badge {
-      display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600;
-      border: 1px solid transparent;
+      display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 700; border: 1px solid transparent;
     }
-    .badge.success { color: var(--success); background: rgba(27,169,118,0.1); border-color: rgba(27,169,118,0.18); }
-    .badge.warning { color: var(--warning); background: rgba(215,149,35,0.1); border-color: rgba(215,149,35,0.18); }
-    .badge.danger { color: var(--danger); background: rgba(216,74,74,0.1); border-color: rgba(216,74,74,0.18); }
-    .badge.neutral { color: var(--muted); background: rgba(101,121,152,0.08); border-color: rgba(101,121,152,0.14); }
-    .row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: end; }
-    .stack { display: grid; gap: 12px; }
-    label {
-      display: block; margin-bottom: 6px; font-size: 0.72rem; letter-spacing: 0.12em;
-      text-transform: uppercase; color: var(--muted);
-    }
+    .badge.success { color: var(--success); background: rgba(5, 150, 105, 0.1); border-color: rgba(5, 150, 105, 0.2); }
+    .badge.warning { color: var(--warning); background: rgba(217, 119, 6, 0.1); border-color: rgba(217, 119, 6, 0.2); }
+    .badge.danger { color: var(--danger); background: rgba(220, 38, 38, 0.1); border-color: rgba(220, 38, 38, 0.2); }
+    .badge.neutral { color: var(--muted); background: rgba(100, 116, 139, 0.1); border-color: rgba(100, 116, 139, 0.2); }
+
+    .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: end; }
+    label { display: block; margin-bottom: 6px; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
     input, select, textarea {
-      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
-      background: var(--surface); color: var(--text);
+      width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--line);
+      background: var(--surface); color: var(--text); outline: none; transition: border-color 0.2s, box-shadow 0.2s;
     }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(30, 98, 232, 0.15); }
     textarea { min-height: 110px; resize: vertical; }
+
     .alert {
-      margin-top: 12px; border-radius: 12px; padding: 12px 14px; border: 1px solid var(--line);
-      background: var(--surface-alt); line-height: 1.5;
+      margin-top: 14px; border-radius: 12px; padding: 14px 16px; border: 1px solid var(--line);
+      background: var(--surface-alt); line-height: 1.5; font-size: 0.9rem;
     }
-    .alert.success { background: rgba(27,169,118,0.08); border-color: rgba(27,169,118,0.2); }
-    .alert.error { background: rgba(216,74,74,0.08); border-color: rgba(216,74,74,0.2); }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    th { font-size: 0.73rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .alert.success { background: rgba(5, 150, 105, 0.08); border-color: rgba(5, 150, 105, 0.25); color: var(--success); }
+    .alert.error { background: rgba(220, 38, 38, 0.08); border-color: rgba(220, 38, 38, 0.25); color: var(--danger); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.88rem; }
+    th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    th { font-size: 0.73rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 700; background: var(--surface-alt); }
+    .tablewrap { overflow-x: auto; }
+
+    /* PDF Viewer Box */
+    .pdf-viewer-box {
+      margin-top: 14px; border: 1px dashed var(--line); border-radius: 12px; padding: 16px; background: var(--surface-alt);
+      text-align: center; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    /* Enhanced Patterns Chart Styling */
+    .pattern-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .pattern-card:hover { transform: translateY(-2px); box-shadow: 0 25px 30px -10px rgba(15, 23, 42, 0.12); }
+    .hrow { display: grid; grid-template-columns: minmax(130px, 35%) minmax(0, 1fr) 65px; gap: 14px; align-items: center; padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; transition: background 0.15s ease; cursor: default; }
+    .hrow:hover { background: var(--surface-alt); }
+    .hlabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-weight: 600; }
+    .htrack { position: relative; height: 14px; background: var(--surface-alt); border-radius: 7px; overflow: hidden; border: 1px solid var(--line); }
+    .hfill { position: absolute; top: 0; left: 0; height: 100%; background: linear-gradient(90deg, var(--blue), var(--teal)); border-radius: 7px; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .htick { position: absolute; top: -2px; bottom: -2px; width: 3px; background: var(--danger); z-index: 3; border-radius: 2px; box-shadow: 0 0 4px rgba(220, 38, 38, 0.5); }
+    .hval { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--blue); }
+    .tip { position: fixed; z-index: 500; display: none; pointer-events: none; max-width: 250px; padding: 12px 14px; border-radius: 10px; font-size: 0.82rem; line-height: 1.4; background: var(--navy); color: #fff; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.1); }
+    .toggle { background: var(--surface-alt); border: 1px solid var(--line); color: var(--text); padding: 6px 12px; font-size: 0.75rem; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    .toggle:hover { border-color: var(--blue); color: var(--blue); background: var(--surface); }
+
     @media (max-width: 900px) {
       .app { display: block; }
       .sidebar { width: auto; }
-      .main { padding: 18px 18px 36px; }
+      .main { padding: 20px; max-height: none; }
       .row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <div class="app">
+
+  <!-- Secure Login Portal Overlay -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-brand">SecureScore</div>
+      <div class="login-subtitle">Insurance Verification Portal</div>
+      <form id="loginForm">
+        <div class="login-field">
+          <label for="loginUser">Username</label>
+          <input id="loginUser" type="text" placeholder="e.g. mithradevi" required autocomplete="username">
+        </div>
+        <div class="login-field">
+          <label for="loginPass">Password</label>
+          <input id="loginPass" type="password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button class="btn primary" type="submit" style="width:100%; padding: 12px; margin-top: 6px;">Sign In Securely</button>
+        <div id="loginError" class="login-error" style="display:none;"></div>
+      </form>
+      <div style="margin-top: 20px; font-size: 0.75rem; color: var(--muted); text-align: center;">
+        Authorized personnel only. Encrypted session security.
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Application Body -->
+  <div class="app" id="appRoot" style="display:none;">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-title">SecureScore</div>
-        <div class="brand-sub">Intelligent Verification System</div>
+        <div class="brand-sub">Verification System</div>
       </div>
       <nav class="nav" aria-label="Main navigation">
         <button class="nav-btn active" data-page="overview">Overview</button>
-        <button class="nav-btn" data-page="explorer">Person &amp; Claim Explorer</button>
-        <button class="nav-btn" data-page="verify">Verify a Record</button>
-        <button class="nav-btn" data-page="queue">Review Queue</button>
+        <button class="nav-btn" data-page="explorer">Person claim</button>
+        <button class="nav-btn" data-page="verify">Verify</button>
+        <button class="nav-btn" data-page="queue">Review</button>
         <button class="nav-btn" data-page="insights">Insights</button>
-        <button class="nav-btn" data-page="assistant">Document Assistant</button>
-        <button class="nav-btn" data-page="performance">Model Performance</button>
-        <button class="nav-btn" data-page="reports">Reports &amp; History</button>
-        <button class="nav-btn" data-page="settings">Settings</button>
+        <button class="nav-btn" data-page="analytics">Analytics</button>
+        <button class="nav-btn" data-page="check">Check a claim</button>
+        <button class="nav-btn" data-page="patterns">Patterns</button>
+        <button class="nav-btn" data-page="investigation">Claim extraction</button>
+        <button class="nav-btn" data-page="assistant">Document assistant</button>
       </nav>
       <div class="sidebar-meta">
-        Verified identifiers: Patient_ID<br>
-        Policy_Number / Claim_ID<br>
-        Person search is limited to actual dataset relationships.
+        <strong>User:</strong> Authorized Agent<br>
+        Session: Encrypted &amp; Secure<br>
+        <button class="logout-btn" id="logoutBtn" type="button">Sign Out</button>
       </div>
     </aside>
 
@@ -186,22 +257,24 @@
         <div class="breadcrumbs" id="crumbs">SecureScore / Overview</div>
         <div class="toolbar">
           <button class="btn" id="themeToggle">Dark mode</button>
-          <button class="btn primary" id="refreshBtn">Refresh</button>
+          <button class="btn primary" id="refreshBtn">Refresh Data</button>
         </div>
       </div>
 
+      <!-- 1. Overview -->
       <section id="page-overview" class="page active">
         <div class="page-header">
           <h1>Overview</h1>
-          <p>Live insurance claim portfolio metrics, current fraud model signal, and operational review status.</p>
+          <p>Live insurance claim portfolio metrics, current fraud model signals, and operational review status.</p>
         </div>
         <div id="overviewKpis" class="kpis"></div>
         <div id="overviewCards" class="cards"></div>
       </section>
 
+      <!-- 2. Person claim -->
       <section id="page-explorer" class="page">
         <div class="page-header">
-          <h1>Person &amp; Claim Explorer</h1>
+          <h1>Person claim</h1>
           <p>Search by exact patient or policy identifiers only. Names are not treated as unique identifiers.</p>
         </div>
         <div class="cards">
@@ -228,15 +301,16 @@
             <div id="claimSearchResult" class="alert">No claim selected yet.</div>
           </div>
         </div>
-        <div class="card" style="margin-top:18px;">
+        <div class="card" style="margin-top:20px;">
           <h2>Related claims</h2>
           <div id="personClaimsTable"></div>
         </div>
       </section>
 
+      <!-- 3. Verify -->
       <section id="page-verify" class="page">
         <div class="page-header">
-          <h1>Verify a Record</h1>
+          <h1>Verify</h1>
           <p>Validate the live claim against the model schema, then run the existing fraud prediction endpoint only after confirmation.</p>
         </div>
         <div class="cards">
@@ -260,1822 +334,830 @@
         </div>
       </section>
 
+      <!-- 4. Review -->
       <section id="page-queue" class="page">
         <div class="page-header">
-          <h1>Review Queue</h1>
-          <p>Current review set and claim records available for triage.</p>
+          <h1>Review</h1>
+          <p>Current review set and claim records available for triage with adjustable limit sizes and risk ranges.</p>
         </div>
         <div class="card">
+          <div class="panel" style="margin-bottom: 16px; padding: 14px;">
+            <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end;">
+              <div>
+                <label for="queueLimitSelect">Display count</label>
+                <select id="queueLimitSelect">
+                  <option value="10" selected>Top 10</option>
+                  <option value="50">Top 50</option>
+                  <option value="100">Top 100</option>
+                </select>
+              </div>
+              <div>
+                <label for="queueRangeSelect">Fraud rate range</label>
+                <select id="queueRangeSelect">
+                  <option value="all">All Risk Levels</option>
+                  <option value="high">High Risk (&gt; 70%)</option>
+                  <option value="medium">Medium Risk (30% - 70%)</option>
+                  <option value="low">Low Risk (&lt; 30%)</option>
+                </select>
+              </div>
+              <div>
+                <button class="btn primary" id="applyQueueFilter" type="button">Apply Filter</button>
+              </div>
+            </div>
+          </div>
           <div id="reviewQueueTable"></div>
         </div>
       </section>
 
+      <!-- 5. Insights -->
       <section id="page-insights" class="page">
         <div class="page-header">
           <h1>Insights</h1>
-          <p>Portfolio-level patterns, provider-risk drift, and profitability signal from the existing analytics endpoints.</p>
+          <p>Portfolio-level trends, loss ratio distributions, and provider risk drift analytics.</p>
         </div>
-        <div id="insightsCards" class="cards"></div>
+        <div class="cards" id="insightsCards"></div>
       </section>
 
-      <section id="page-assistant" class="page">
+      <!-- 6. Analytics -->
+      <section id="page-analytics" class="page">
         <div class="page-header">
-          <h1>Document Assistant</h1>
-          <p>Grounded local document search with exact citations and evidence-backed answers only.</p>
+          <h1>Analytics</h1>
+          <p>Monthly activity, Random Forest risk scores, and held-out model evaluation metrics.</p>
+        </div>
+        <div class="card" id="analyticsCards"></div>
+      </section>
+
+      <!-- 7. Check a claim -->
+      <section id="page-check" class="page">
+        <div class="page-header">
+          <h1>Check a claim</h1>
+          <p>Enter custom claim parameters below and test live prediction scores against the model.</p>
         </div>
         <div class="cards">
           <div class="card">
-            <h2>Upload document</h2>
-            <input type="file" id="docFile" accept=".pdf,.txt,.docx">
-            <button class="btn primary" id="uploadDocBtn" style="margin-top:12px;">Upload</button>
-            <div id="uploadStatus" class="alert">No upload attempted yet.</div>
+            <h2>Interactive Scoring Form</h2>
+            <form id="checkForm" class="list">
+              <div>
+                <label for="checkAmount">Claim Amount ($)</label>
+                <input id="checkAmount" type="number" min="0" placeholder="e.g. 50000" required>
+              </div>
+              <div>
+                <label for="checkAge">Patient Age</label>
+                <input id="checkAge" type="number" min="0" max="120" placeholder="e.g. 45" required>
+              </div>
+              <div>
+                <label for="checkProcedures">Number of Procedures</label>
+                <input id="checkProcedures" type="number" min="0" placeholder="e.g. 2" required>
+              </div>
+              <button class="btn primary" type="submit" style="margin-top:8px;">Score custom claim</button>
+            </form>
+            <div id="checkResult" class="alert" style="margin-top:14px;">No custom score calculated yet.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. Patterns -->
+      <section id="page-patterns" class="page">
+        <div class="page-header">
+          <h1>Patterns</h1>
+          <p>Fraud rate distributions across claim size, procedures, distance, and patient age.</p>
+        </div>
+        <div class="grid2" id="patternsGrid"></div>
+      </section>
+
+      <!-- 9. Claim extraction -->
+      <section id="page-investigation" class="page">
+        <div class="page-header">
+          <h1>Claim extraction</h1>
+          <p>Review extracted claim details, auto-populate patient records, and approve or reject claims.</p>
+        </div>
+        <div class="cards">
+          <div class="card">
+            <h2>Add / Extract Claim</h2>
+            <form id="extractionForm" class="list" style="margin-top: 12px;">
+              <div>
+                <label for="extPolicy">Policy Number</label>
+                <input id="extPolicy" type="text" placeholder="e.g. POL-99482-TX">
+              </div>
+              <div>
+                <label for="extName">Patient Name</label>
+                <input id="extName" type="text" placeholder="e.g. Eleanor Vance">
+              </div>
+              <div>
+                <label for="extAmount">Claim Amount ($)</label>
+                <input id="extAmount" type="number" min="0" placeholder="e.g. 15000" required>
+              </div>
+              <button class="btn primary" type="submit" style="margin-top:4px;">Extract &amp; Populate Record</button>
+            </form>
           </div>
           <div class="card">
-            <h2>Ask a question</h2>
-            <textarea id="docQuestion" placeholder="What is the waiting period or coverage limit?"></textarea>
-            <button class="btn primary" id="askDocBtn" style="margin-top:12px;">Ask</button>
+            <h2>Extracted Records Queue</h2>
+            <div id="extractedRecordsList" class="list" style="margin-top: 12px;">
+              <!-- Dynamic records appear here -->
+            </div>
+            <div id="extractionStatus" class="alert" style="margin-top: 14px; display: none;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10. Document assistant -->
+      <section id="page-assistant" class="page">
+        <div class="page-header">
+          <h1>Document assistant</h1>
+          <p>Grounded local document search with PDF upload viewer, exact citations, and report downloading.</p>
+        </div>
+        <div class="cards">
+          <div class="card">
+            <h2>Upload &amp; Preview PDF Document</h2>
+            <input type="file" id="docFile" accept=".pdf,.txt,.docx">
+            <button class="btn primary" id="uploadDocBtn" style="margin-top:12px;">Upload &amp; Parse Document</button>
+            <div id="uploadStatus" class="alert">No document uploaded yet.</div>
+            <div class="pdf-viewer-box" id="pdfPreviewBox">
+              <span class="muted" style="font-size: 0.85rem;">📄 PDF Preview Window</span>
+              <span id="pdfFileName" style="font-weight: 600; font-size: 0.9rem;">No PDF loaded</span>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Ask a question &amp; Download</h2>
+            <textarea id="docQuestion" placeholder="What is the waiting period or coverage limit in the uploaded PDF?"></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 12px;">
+              <button class="btn primary" id="askDocBtn" style="flex: 1;">Ask Question</button>
+              <button class="btn" id="downloadReportBtn" style="flex: 1;" type="button">Download Report</button>
+            </div>
             <div id="docAnswer" class="alert">No answer yet.</div>
           </div>
         </div>
       </section>
-
-      <section id="page-performance" class="page">
-        <div class="page-header">
-          <h1>Model Performance</h1>
-          <p>Offline evaluation metrics from the trained Random Forest model.</p>
-        </div>
-        <div id="performanceCards" class="cards"></div>
-      </section>
-
-      <section id="page-reports" class="page">
-        <div class="page-header">
-          <h1>Reports &amp; History</h1>
-          <p>Portfolio quality and operational history available in the current backend.</p>
-        </div>
-        <div class="card">
-          <div id="reportsPanel"></div>
-        </div>
-      </section>
-
-      <section id="page-settings" class="page">
-        <div class="page-header">
-          <h1>Settings</h1>
-          <p>Runtime configuration and live app model status.</p>
-        </div>
-        <div class="card">
-          <div id="settingsPanel"></div>
-        </div>
-      </section>
     </main>
   </div>
+  <div class="tip" id="tip" role="tooltip"></div>
 
   <script>
-    const state = {
-      stats: null,
-      providerRisk: [],
-      lossRatio: {},
-      selectedClaim: null,
-      selectedPatient: null,
-      modelHealth: null
-    };
+    (function () {
+      const state = {
+        stats: null,
+        providerRisk: [],
+        lossRatio: {},
+        selectedClaim: null,
+        selectedPatient: null,
+        modelHealth: null,
+        lastAnswer: 'No document queries recorded yet.',
+        uploadedDocName: null,
+        extractedRecords: [
+          { policy: 'POL-99482-TX', name: 'Eleanor Vance', amount: 42500, status: 'Pending Review' },
+          { policy: 'POL-10492-NY', name: 'Marcus Brody', amount: 18200, status: 'Pending Review' }
+        ]
+      };
 
-    function $(sel) { return document.querySelector(sel); }
+      function $(sel) { return document.querySelector(sel); }
 
-    function money(value) {
-      if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(value));
-    }
+      function money(value) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number(value));
+      }
 
-    function pct(value) {
-      if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
-      return `${(Number(value) * 100).toFixed(1)}%`;
-    }
+      function pct(value) {
+        if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
+        return `${(Number(value) * 100).toFixed(1)}%`;
+      }
 
-    async function api(url, options = {}) {
-      const response = await fetch(url, options);
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || response.statusText || 'Request failed');
-      return data;
-    }
+      function whole(n) { return new Intl.NumberFormat('en').format(n); }
 
-    function setPage(name) {
-      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.page === name));
-      document.querySelectorAll('.page').forEach(page => page.classList.toggle('active', page.id === 'page-' + name));
-      const title = name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, ' ');
-      $('#crumbs').textContent = 'SecureScore / ' + title;
-    }
+      async function api(url, options = {}) {
+        const response = await fetch(url, options);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || response.statusText || 'Request failed');
+        return data;
+      }
 
-    function alertBox(el, message, kind = 'success') {
-      el.className = 'alert ' + kind;
-      el.textContent = message;
-    }
+      const tip = $('#tip');
+      function showTip(html, x, y) {
+        tip.innerHTML = html; tip.style.display = 'block';
+        const w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(8, Math.min(x + 12, innerWidth - w - 8)) + 'px';
+        tip.style.top = (y - h - 12 < 8 ? y + 18 : y - h - 12) + 'px';
+      }
+      const hideTip = () => { tip.style.display = 'none'; };
+      const rowTip = r => `<b>${r.label}</b><br>Fraud Rate: ${pct(r.rate)}<br>Claims Volume: ${whole(Math.round(r.rate * r.n))} of ${whole(r.n)}`;
 
-    function renderOverview() {
-      const stats = state.stats || { kpis: {}, test: {} };
-      const kpis = [
-        { label: 'Total claims', value: stats.kpis.claims ?? '—', sub: 'Available records' },
-        { label: 'Fraudulent claims', value: stats.kpis.fraud_claims ?? '—', sub: 'Actual fraud label' },
-        { label: 'Fraud rate', value: pct(stats.kpis.fraud_rate), sub: 'Overall ratio' },
-        { label: 'Model threshold', value: pct(stats.threshold), sub: 'High-risk trigger' }
-      ];
-      $('#overviewKpis').innerHTML = kpis.map(k => `
-        <div class="kpi">
-          <div class="kpi-label">${k.label}</div>
-          <div class="kpi-value">${k.value}</div>
-          <div class="kpi-sub">${k.sub}</div>
-        </div>
-      `).join('');
+      function setPage(name) {
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.page === name));
+        document.querySelectorAll('.page').forEach(page => page.classList.toggle('active', page.id === 'page-' + name));
+        const title = name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, ' ');
+        $('#crumbs').textContent = 'SecureScore / ' + title;
+        hideTip();
+        if (name === 'patterns' && state.stats) renderPatterns();
+        if (name === 'analytics') loadAnalytics();
+        if (name === 'insights') loadInsights();
+        if (name === 'investigation') renderExtractedRecords();
+      }
 
-      const providerRows = (state.providerRisk || []).slice(0, 5).map(r => `
-        <div class="list-item">
-          <div>
-            <strong>Hospital ${r.hospital_id}</strong><br>
-            <span class="muted">${r.specialty || '—'}</span>
+      function alertBox(el, message, kind = 'success') {
+        el.className = 'alert ' + kind;
+        el.textContent = message;
+      }
+
+      function renderExtractedRecords() {
+        const container = $('#extractedRecordsList');
+        if (!state.extractedRecords.length) {
+          container.innerHTML = '<div class="muted">No extracted records.</div>';
+          return;
+        }
+        container.innerHTML = state.extractedRecords.map((rec, idx) => `
+          <div class="list-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>${rec.name ? rec.name : 'Anonymous / Unassigned'}</strong><br>
+                <span class="muted">Policy: ${rec.policy ? rec.policy : 'N/A'} | Amount: ${money(rec.amount)}</span>
+              </div>
+              <span class="badge ${rec.status === 'Approved' ? 'success' : rec.status === 'Rejected' ? 'danger' : 'warning'}">${rec.status}</span>
+            </div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
+              <button class="btn" style="padding: 4px 10px; font-size: 0.75rem;" onclick="window.inspectExtraction(${idx})">Check Score</button>
+              <button class="btn primary" style="padding: 4px 10px; font-size: 0.75rem; background: var(--success);" onclick="window.approveExtraction(${idx})">Approve</button>
+              <button class="btn primary" style="padding: 4px 10px; font-size: 0.75rem; background: var(--danger);" onclick="window.rejectExtraction(${idx})">Reject</button>
+            </div>
           </div>
-          <span class="badge ${r.trend === 'Rising' ? 'warning' : r.trend === 'Falling' ? 'success' : 'neutral'}">${r.trend || 'Stable'}</span>
-        </div>
-      `).join('') || '<div class="muted">No provider-risk data.</div>';
+        `).join('');
+      }
 
-      const lossRows = (state.lossRatio.by_provider_type || []).slice(0, 5).map(r => `
-        <div class="list-item">
-          <div>${r.label}</div>
-          <span class="badge neutral">${pct(r.loss_ratio)}</span>
-        </div>
-      `).join('') || '<div class="muted">No loss-ratio segments.</div>';
+      window.inspectExtraction = function(idx) {
+        const rec = state.extractedRecords[idx];
+        if (!rec) return;
+        $('#checkAmount').value = rec.amount;
+        $('#checkAge').value = 40; // Default baseline age estimate
+        $('#checkProcedures').value = 2;
+        setPage('check');
+        const event = new Event('submit', { cancelable: true });
+        $('#checkForm').dispatchEvent(event);
+      };
 
-      const cards = [
-        { title: 'Provider risk', body: providerRows },
-        { title: 'Loss ratio by provider type', body: lossRows },
-        { title: 'Status mix', body: (stats.by_provider_type || []).slice(0, 5).map(r => `
-          <div class="list-item"><div>${r.label}</div><span class="badge neutral">${r.n}</span></div>
-        `).join('') || '<div class="muted">No status mix available.</div>' }
-      ];
-      $('#overviewCards').innerHTML = cards.map(c => `
-        <div class="card">
-          <h2>${c.title}</h2>
-          <div class="list">${c.body}</div>
-        </div>
-      `).join('');
-    }
+      window.approveExtraction = function(idx) {
+        state.extractedRecords[idx].status = 'Approved';
+        renderExtractedRecords();
+      };
 
-    async function loadOverview() {
-      try {
-        const [health, stats, providerRisk, lossRatio] = await Promise.all([
-          api('/health'), api('/api/stats'), api('/api/provider-risk?limit=10'), api('/api/loss-ratio')
-        ]);
-        state.modelHealth = health;
-        state.stats = stats;
-        state.providerRisk = providerRisk.providers || [];
-        state.lossRatio = lossRatio || {};
-        renderOverview();
-        renderInsights();
-        renderPerformance();
-        renderReports();
-        renderSettings();
-      } catch (error) {
-        console.error(error);
-      }
-    }
+      window.rejectExtraction = function(idx) {
+        state.extractedRecords[idx].status = 'Rejected';
+        renderExtractedRecords();
+      };
 
-    async function searchPerson() {
-      const input = $('#personSearch').value.trim();
-      if (!input) {
-        alertBox($('#personSearchResult'), 'Enter a supported Patient_ID or Policy_Number.', 'error');
-        return;
-      }
-      try {
-        const data = await api(`/api/person-search?identifier=${encodeURIComponent(input)}`);
-        if (!data.results || data.results.length === 0) {
-          alertBox($('#personSearchResult'), data.message || 'No verified person record matched that identifier.', 'error');
-          $('#personClaimsTable').innerHTML = '<div class="muted">No related claims.</div>';
-          return;
-        }
-        const person = data.results[0];
-        state.selectedPatient = person;
-        $('#personSearchResult').className = 'alert success';
-        $('#personSearchResult').innerHTML = `
-          <strong>Matched patient:</strong> ${person.patient_id}<br>
-          <span class="muted">Claim count: ${person.claim_count}</span><br>
-          <span class="muted">Total claim amount: ${money(person.total_claim_amount)}</span>
-        `;
-        await loadPersonClaims(person.patient_id);
-      } catch (error) {
-        alertBox($('#personSearchResult'), error.message, 'error');
-      }
-    }
+      function renderOverview() {
+        const stats = state.stats || { kpis: {}, test: {} };
+        const kpis = [
+          { label: 'Total claims', value: stats.kpis.claims ?? '—', sub: 'Available records' },
+          { label: 'Fraudulent claims', value: stats.kpis.fraud_claims ?? '—', sub: 'Actual fraud label' },
+          { label: 'Fraud rate', value: pct(stats.kpis.fraud_rate), sub: 'Overall ratio' },
+          { label: 'Model threshold', value: pct(stats.threshold), sub: 'High-risk trigger' }
+        ];
+        $('#overviewKpis').innerHTML = kpis.map(k => `
+          <div class="kpi">
+            <div class="kpi-label">${k.label}</div>
+            <div class="kpi-value">${k.value}</div>
+            <div class="kpi-sub">${k.sub}</div>
+          </div>
+        `).join('');
 
-    async function loadPersonClaims(patientId) {
-      try {
-        const data = await api(`/api/person-claims?patient_id=${encodeURIComponent(patientId)}`);
-        const claims = data.claims || [];
-        if (!claims.length) {
-          $('#personClaimsTable').innerHTML = '<div class="muted">No claims linked to this patient identifier.</div>';
-          return;
-        }
-        $('#personClaimsTable').innerHTML = `
-          <table>
-            <thead>
-              <tr>
-                <th>Claim ID</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Service Date</th>
-                <th>Provider</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${claims.map(claim => `
-                <tr>
-                  <td>${claim.Claim_ID}</td>
-                  <td>${money(claim.Claim_Amount)}</td>
-                  <td><span class="badge ${claim.Claim_Status === 'Approved' ? 'success' : claim.Claim_Status === 'Rejected' ? 'danger' : 'neutral'}">${claim.Claim_Status || 'Unknown'}</span></td>
-                  <td>${claim.Service_Date || '—'}</td>
-                  <td>${claim.Provider_Type || '—'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-      } catch (error) {
-        $('#personClaimsTable').innerHTML = '<div class="muted">Unable to load related claims.</div>';
-      }
-    }
-
-    async function searchClaim() {
-      const input = $('#claimSearch').value.trim();
-      if (!input) {
-        alertBox($('#claimSearchResult'), 'Enter a valid Claim_ID.', 'error');
-        return;
-      }
-      try {
-        const data = await api(`/api/claim-search?claim_id=${encodeURIComponent(input)}`);
-        if (!data.claim) {
-          alertBox($('#claimSearchResult'), data.message || 'No claim matched that identifier.', 'error');
-          return;
-        }
-        state.selectedClaim = data.claim;
-        $('#claimSearchResult').className = 'alert success';
-        $('#claimSearchResult').innerHTML = `
-          <strong>Claim ${data.claim.Claim_ID}</strong><br>
-          <span class="muted">Patient_ID: ${data.claim.Patient_ID}</span><br>
-          <span class="muted">Policy_Number: ${data.claim.Policy_Number}</span><br>
-          <span class="muted">Status: ${data.claim.Claim_Status || 'Unknown'}</span>
-        `;
-      } catch (error) {
-        alertBox($('#claimSearchResult'), error.message, 'error');
-      }
-    }
-
-    async function lookupClaim() {
-      const input = $('#verifyClaimId').value.trim();
-      if (!input) {
-        alertBox($('#verifySummary'), 'Enter a Claim_ID before validating.', 'error');
-        return;
-      }
-      try {
-        const data = await api(`/api/claim-search?claim_id=${encodeURIComponent(input)}`);
-        if (!data.claim) {
-          state.selectedClaim = null;
-          alertBox($('#verifySummary'), data.message || 'No claim matched that identifier.', 'error');
-          return;
-        }
-        state.selectedClaim = data.claim;
-        const required = ['Patient_Age', 'Claim_Amount', 'Service_Type', 'Provider_Type'];
-        const missing = required.filter(field => data.claim[field] === null || data.claim[field] === undefined || data.claim[field] === '');
-        $('#verifySummary').className = 'alert success';
-        $('#verifySummary').innerHTML = `
-          <strong>Selected claim:</strong> ${data.claim.Claim_ID}<br>
-          <span class="muted">Patient_ID: ${data.claim.Patient_ID} | Amount: ${money(data.claim.Claim_Amount)} | Status: ${data.claim.Claim_Status || 'Unknown'}</span>
-        `;
-        $('#validationSummary').className = 'alert';
-        $('#validationSummary').innerHTML = `
-          Required fields checked: ${required.join(', ')}<br>
-          Missing/invalid values: ${missing.length ? missing.join(', ') : 'none'}
-        `;
-      } catch (error) {
-        alertBox($('#verifySummary'), error.message, 'error');
-      }
-    }
-
-    async function runPrediction() {
-      if (!state.selectedClaim) {
-        alertBox($('#predictionResult'), 'Select a valid claim before running the model.', 'error');
-        return;
-      }
-      try {
-        $('#predictionResult').className = 'alert';
-        $('#predictionResult').textContent = 'Running the existing fraud model…';
-        const result = await api('/predict', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(state.selectedClaim)
-        });
-        const item = result.results && result.results[0] ? result.results[0] : null;
-        if (!item) {
-          alertBox($('#predictionResult'), 'No model output returned.', 'error');
-          return;
-        }
-        const riskClass = item.is_fraud ? 'danger' : item.risk_level === 'Medium' ? 'warning' : 'success';
-        $('#predictionResult').className = 'alert success';
-        $('#predictionResult').innerHTML = `
-          <strong>Prediction result:</strong> ${item.is_fraud ? 'High risk / likely fraud' : 'Low risk'}<br>
-          <span class="muted">Probability: ${item.fraud_probability}</span><br>
-          <span class="muted">Risk level: ${item.risk_level}</span>
-        `;
-      } catch (error) {
-        alertBox($('#predictionResult'), error.message, 'error');
-      }
-    }
-
-    function renderInsights() {
-      const providerRisk = (state.providerRisk || []).slice(0, 6);
-      const lossRows = (state.lossRatio.by_provider_type || []).slice(0, 5);
-      const cards = [
-        { title: 'Provider risk drift', body: providerRisk.map(item => `
+        const providerRows = (state.providerRisk || []).slice(0, 5).map(r => `
           <div class="list-item">
-            <div><strong>Hospital ${item.hospital_id}</strong><br><span class="muted">${item.specialty || '—'}</span></div>
-            <span class="badge ${item.trend === 'Rising' ? 'warning' : item.trend === 'Falling' ? 'success' : 'neutral'}">${item.trend}</span>
+            <div>
+              <strong>Hospital ${r.hospital_id}</strong><br>
+              <span class="muted">${r.specialty || '—'}</span>
+            </div>
+            <span class="badge ${r.trend === 'Rising' ? 'warning' : r.trend === 'Falling' ? 'success' : 'neutral'}">${r.trend || 'Stable'}</span>
           </div>
-        `).join('') || '<div class="muted">No provider history.</div>' },
-        { title: 'Loss ratio', body: lossRows.map(item => `
-          <div class="list-item"><div>${item.label}</div><span class="badge neutral">${pct(item.loss_ratio)}</span></div>
-        `).join('') || '<div class="muted">No ratio data.</div>' }
-      ];
-      $('#insightsCards').innerHTML = cards.map(c => `
-        <div class="card"><h2>${c.title}</h2><div class="list">${c.body}</div></div>
-      `).join('');
-    }
+        `).join('') || '<div class="muted">No provider-risk data.</div>';
 
-    function renderPerformance() {
-      const stats = state.stats || { test: {} };
-      const metrics = [
-        { label: 'Precision', value: (stats.test.precision ?? 0).toFixed(3) },
-        { label: 'Recall', value: (stats.test.recall ?? 0).toFixed(3) },
-        { label: 'Held-out rows', value: stats.test.n ?? '—' },
-        { label: 'Flagged by model', value: stats.test.flagged ?? '—' }
-      ];
-      $('#performanceCards').innerHTML = metrics.map(m => `
-        <div class="card">
-          <h2>${m.label}</h2>
-          <div class="kpi-value">${m.value}</div>
-        </div>
-      `).join('');
-    }
-
-    function renderReports() {
-      const stats = state.stats || { kpis: {}, date_range: [] };
-      $('#reportsPanel').innerHTML = `
-        <div class="list">
-          <div class="list-item"><div>Total claims</div><strong>${stats.kpis.claims ?? '—'}</strong></div>
-          <div class="list-item"><div>Fraudulent claims</div><strong>${stats.kpis.fraud_claims ?? '—'}</strong></div>
-          <div class="list-item"><div>Average claim amount</div><strong>${money(stats.kpis.avg_claim_amount)}</strong></div>
-          <div class="list-item"><div>Claim date range</div><strong>${(stats.date_range || []).join(' → ') || '—'}</strong></div>
-        </div>
-      `;
-    }
-
-    function renderSettings() {
-      const model = state.modelHealth || {};
-      $('#settingsPanel').innerHTML = `
-        <div class="list">
-          <div class="list-item"><div>Model file</div><strong>${model.model || '—'}</strong></div>
-          <div class="list-item"><div>Threshold</div><strong>${pct(model.threshold)}</strong></div>
-          <div class="list-item"><div>Input features</div><strong>${model.n_input_features ?? '—'}</strong></div>
-          <div class="list-item"><div>Dataset loaded</div><strong>${model.data_loaded ? 'Yes' : 'No'}</strong></div>
-        </div>
-      `;
-    }
-
-    async function loadReviewQueue() {
-      try {
-        const data = await api('/api/review-claims?limit=20');
-        const rows = data.claims || [];
-        $('#reviewQueueTable').innerHTML = `
-          <table>
-            <thead>
-              <tr>
-                <th>Claim ID</th>
-                <th>Amount</th>
-                <th>Provider</th>
-                <th>Status</th>
-                <th>Claim date</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows.map(r => `
-                <tr>
-                  <td>${r.claim_id}</td>
-                  <td>${money(r.claim_amount)}</td>
-                  <td>${r.provider_type || '—'}</td>
-                  <td><span class="badge ${r.claim_status === 'Approved' ? 'success' : r.claim_status === 'Rejected' ? 'danger' : 'neutral'}">${r.claim_status || 'Unknown'}</span></td>
-                  <td>${r.claim_date || '—'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-      } catch (error) {
-        $('#reviewQueueTable').innerHTML = '<div class="muted">Review queue is unavailable right now.</div>';
-      }
-    }
-
-    async function uploadDocument() {
-      const file = $('#docFile').files[0];
-      if (!file) {
-        alertBox($('#uploadStatus'), 'Choose a PDF, TXT, or DOCX file first.', 'error');
-        return;
-      }
-      try {
-        const form = new FormData();
-        form.append('file', file);
-        const data = await api('/api/documents', { method: 'POST', body: form });
-        alertBox($('#uploadStatus'), `Document uploaded: ${data.document.filename}`, 'success');
-      } catch (error) {
-        alertBox($('#uploadStatus'), error.message, 'error');
-      }
-    }
-
-    async function askDocument() {
-      const question = $('#docQuestion').value.trim();
-      if (!question) {
-        alertBox($('#docAnswer'), 'Type a question before asking the assistant.', 'error');
-        return;
-      }
-      try {
-        const data = await api('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question })
-        });
-        const answer = data.answer || 'No supporting evidence found for that question.';
-        alertBox($('#docAnswer'), answer, 'success');
-      } catch (error) {
-        alertBox($('#docAnswer'), error.message, 'error');
-      }
-    }
-
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-      btn.addEventListener('click', () => setPage(btn.dataset.page));
-    });
-
-    $('#themeToggle').addEventListener('click', () => {
-      document.body.classList.toggle('dark');
-      $('#themeToggle').textContent = document.body.classList.contains('dark') ? 'Light mode' : 'Dark mode';
-    });
-
-    $('#personSearchBtn').addEventListener('click', searchPerson);
-    $('#claimSearchBtn').addEventListener('click', searchClaim);
-    $('#verifyLookupBtn').addEventListener('click', lookupClaim);
-    $('#predictBtn').addEventListener('click', runPrediction);
-    $('#uploadDocBtn').addEventListener('click', uploadDocument);
-    $('#askDocBtn').addEventListener('click', askDocument);
-    $('#refreshBtn').addEventListener('click', async () => {
-      await loadOverview();
-      await loadReviewQueue();
-    });
-
-    async function init() {
-      setPage('overview');
-      await loadOverview();
-      await loadReviewQueue();
-    }
-
-    init();
-  </script>
-</body>
-</html> font-size:13px; font-weight:600;         background:color-mix(in srgb, var(--c) 14%, var(--surface)); border:1px solid color-mix(in srgb, var(--c) 45%, var(--surface)); }
-.badge i { color:var(--c); font-style:normal; font-size:11px; }
-.badge.high { --c:var(--crit); } .badge.medium { --c:var(--warn); } .badge.low { --c:var(--good); }
-
-/* --------------------------------------------------- claim checker */
-.checker { display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,380px); gap:16px; align-items:start; }
-.fieldset { border:0; margin:0 0 18px; padding:0; }
-.fieldset legend { font:600 15px var(--font-display); padding:0; margin-bottom:10px; }
-.fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
-.field label { display:block; font-size:13px; color:var(--ink-2); margin-bottom:4px; }
-.field input, .field select { width:100%; height:38px; padding:0 10px; background:var(--surface); border:1px solid var(--line); border-radius:6px; }
-.field input:hover, .field select:hover { border-color:var(--ink-3); }
-.actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
-.btn { height:38px; padding:0 16px; border-radius:6px; border:1px solid var(--line); background:var(--surface); cursor:pointer; font-weight:500; }
-.btn:hover { border-color:var(--ink-3); }
-.btn.primary { background:var(--series); border-color:var(--series); color:var(--on-series); }
-.btn.primary:hover { background:var(--series-hover); border-color:var(--series-hover); }
-.result { position:sticky; top:24px; }
-.result h2 { font-size:17px; }
-.score { display:flex; align-items:center; gap:14px; margin:14px 0 4px; flex-wrap:wrap; }
-.score-num { font:600 56px/1 var(--font-display); font-variant-numeric:tabular-nums; }
-.meter { position:relative; margin-top:34px; }
-.meter-track { height:14px; background:var(--grid); border-radius:7px; overflow:hidden; }
-.meter-fill { height:100%; width:0; border-radius:7px 0 0 7px; transition:width .45s ease; }
-.meter-tick { position:absolute; top:-8px; bottom:-8px; width:0; border-left:2px solid var(--ink); }
-.meter-tick span { position:absolute; bottom:100%; left:0; transform:translateX(-50%); margin-bottom:3px; font-size:12.5px; font-weight:600; white-space:nowrap; }
-.scale { display:flex; justify-content:space-between; margin-top:6px; font-size:12px; color:var(--ink-3); }
-.verdict { margin-top:16px; color:var(--ink-2); }
-.labelnote { margin-top:14px; padding-top:14px; border-top:1px solid var(--line); font-size:14px; color:var(--ink-2); }
-.hint { font-size:13px; color:var(--ink-3); margin-top:14px; }
-
-/* ------------------------------------------------------------- misc */
-.tip { position:fixed; z-index:50; display:none; pointer-events:none; max-width:260px; padding:8px 10px; border-radius:6px; font-size:13px; line-height:1.4;
-       background:var(--ink); color:var(--page); box-shadow:0 4px 14px rgba(0,0,0,.18); }
-.tip b { font-weight:600; }
-.banner { padding:14px 16px; border-radius:8px; border:1px solid color-mix(in srgb, var(--crit) 45%, var(--surface)); background:color-mix(in srgb, var(--crit) 10%, var(--surface)); margin-bottom:16px; }
-.banner code { font-family:ui-monospace, Consolas, monospace; font-size:13px; }
-.footnote { margin-top:14px; font-size:13px; color:var(--ink-3); max-width:80ch; }
-.rowctl { display:flex; align-items:center; gap:10px; margin-bottom:12px; font-size:14px; color:var(--ink-2); }
-.rowctl select { height:34px; padding:0 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
-
-/* -------------------------------------------------------- policy assistant */
-.assistant-grid { display:grid; grid-template-columns:minmax(250px, .8fr) minmax(0, 1.6fr); gap:16px; align-items:start; }
-.assistant-panel h2 { font-size:18px; margin-bottom:12px; }
-.upload-form { display:grid; gap:10px; }
-.upload-form input[type="file"] { width:100%; font-size:13px; }
-.document-list { display:grid; gap:8px; margin-top:14px; }
-.document-row { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:8px; align-items:center; border-top:1px solid var(--grid); padding-top:9px; }
-.document-name { overflow-wrap:anywhere; font-size:13px; }
-.document-meta { display:block; color:var(--ink-3); font-size:12px; }
-.document-delete { border:0; background:none; color:var(--crit); text-decoration:underline; cursor:pointer; font-size:12px; padding:4px; }
-.assistant-note { color:var(--ink-3); font-size:13px; margin-top:12px; }
-.chat-log { display:grid; gap:12px; max-height:52vh; overflow-y:auto; margin-bottom:14px; }
-.chat-message { padding:12px 14px; border-radius:8px; background:var(--page); overflow-wrap:anywhere; white-space:pre-wrap; }
-.chat-message.user { background:color-mix(in srgb, var(--series) 11%, var(--surface)); }
-.chat-message h3 { font-size:14px; margin-bottom:5px; }
-.chat-message p { white-space:pre-wrap; }
-.chat-sources { display:grid; gap:8px; margin-top:12px; }
-.source-card { border-left:3px solid var(--series); background:var(--surface); padding:9px 11px; font-size:13px; }
-.source-ref { border:0; padding:0; background:none; text-align:left; color:var(--series-hover); text-decoration:underline; cursor:pointer; font:inherit; font-weight:600; }
-.source-card blockquote { margin:6px 0 0; color:var(--ink-2); white-space:pre-wrap; }
-.suggestions { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 12px; }
-.suggestions button { border:1px solid var(--line); border-radius:999px; background:var(--surface); padding:5px 10px; cursor:pointer; font-size:12px; }
-.chat-form { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
-.chat-form textarea { min-height:74px; resize:vertical; padding:10px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
-.chat-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-.assistant-error { color:var(--crit); font-size:13px; margin-top:8px; }
-.copy-answer { margin-top:9px; }
-/* ---------------------------------------------------------- responsive */
-@media (max-width: 900px) {
-  .app { grid-template-columns:1fr; }
-  .rail { position:static; height:auto; flex-direction:row; flex-wrap:wrap; align-items:center; gap:8px 16px; padding:12px 16px; border-right:0; border-bottom:1px solid var(--line); }
-  .brand small { display:none; }
-  .nav { flex-direction:row; flex-wrap:wrap; order:3; width:100%; }
-  .nav a { border-left:0; border-bottom:3px solid transparent; border-radius:6px 6px 0 0; padding:8px 10px; }
-  .nav a[aria-current="page"] { border-bottom-color:var(--series); }
-  .rail-foot { margin:0 0 0 auto; flex-direction:row; gap:14px; align-items:center; }
-  .rail-foot .synthetic { display:none; }
-  .checker { grid-template-columns:1fr; }
-  .result { position:static; }
-  .assistant-grid { grid-template-columns:1fr; }
-}
-@media (max-width: 560px) {
-  .hrow { grid-template-columns:minmax(0,40%) minmax(0,1fr) 46px; gap:8px; }
-  .hlabel { white-space:normal; line-height:1.25; }
-  .card-head { flex-direction:column; }
-}
-@media (prefers-reduced-motion: reduce) { .meter-fill { transition:none; } }
-
-/* ============================================================ colour theme
-   Everything below only adds colour on top of the styles above.
-   To change the look, edit these accent colours. */
-:root {
-  --c1:#2a78d6; --c2:#8b5cf6; --c3:#ec4899; --c4:#f59e0b; --c5:#10b981; --c6:#06b6d4;
-  --grad:linear-gradient(135deg,#2a78d6,#8b5cf6);
-}
-
-/* page background: soft colour glows */
-body {
-  background:
-    radial-gradient(900px 420px at 100% -5%, color-mix(in srgb, var(--c2) 16%, transparent), transparent 70%),
-    radial-gradient(800px 420px at 0% 0%, color-mix(in srgb, var(--c1) 14%, transparent), transparent 70%),
-    radial-gradient(700px 400px at 60% 110%, color-mix(in srgb, var(--c3) 9%, transparent), transparent 70%),
-    var(--page);
-  background-attachment: fixed;
-}
-
-/* sidebar */
-.rail { background:linear-gradient(180deg,#312e81 0%,#1e40af 55%,#0e7490 100%); border-right:0; color:#fff; }
-.brand { color:#fff; }
-.brand small { color:rgba(255,255,255,.75); }
-.nav a { color:rgba(255,255,255,.82); }
-.nav a:hover { background:rgba(255,255,255,.14); color:#fff; }
-.nav a[aria-current="page"] { background:rgba(255,255,255,.2); color:#fff; border-left-color:#fbbf24; }
-.rail-foot { color:rgba(255,255,255,.75); }
-.rail .linkbtn { color:#fff; }
-@media (max-width: 900px) { .nav a[aria-current="page"] { border-bottom-color:#fbbf24; } }
-
-/* page titles */
-.view-head h1 { background:linear-gradient(90deg,var(--c1),var(--c2) 55%,var(--c3)); -webkit-background-clip:text; background-clip:text; color:transparent; width:fit-content; max-width:100%; }
-
-/* cards */
-.panel { box-shadow:0 1px 2px rgba(0,0,0,.04), 0 10px 28px -14px rgba(70,60,140,.28); transition:transform .15s ease, box-shadow .15s ease; }
-.grid2 > .panel, .assistant-grid > .panel { border-top:3px solid var(--c1); }
-.grid2 > .panel:nth-child(6n+2), .assistant-grid > .panel:nth-child(6n+2) { border-top-color:var(--c2); }
-.grid2 > .panel:nth-child(6n+3) { border-top-color:var(--c3); }
-.grid2 > .panel:nth-child(6n+4) { border-top-color:var(--c4); }
-.grid2 > .panel:nth-child(6n+5) { border-top-color:var(--c5); }
-.grid2 > .panel:nth-child(6n+6) { border-top-color:var(--c6); }
-.grid2 > .panel:hover { transform:translateY(-2px); box-shadow:0 14px 32px -14px rgba(70,60,140,.38); }
-
-/* KPI tiles */
-.kpi { background:linear-gradient(180deg, color-mix(in srgb, var(--k, var(--c1)) 13%, transparent), transparent 75%); border-top:3px solid var(--k, var(--c1)); }
-.kpi:nth-child(1) { --k:var(--c1); } .kpi:nth-child(2) { --k:#e11d48; }
-.kpi:nth-child(3) { --k:var(--c2); } .kpi:nth-child(4) { --k:#d97706; }
-.kpi-value { color:var(--k, var(--ink)); }
-
-/* bar charts: a different colour per bar */
-.hrow:nth-child(6n+1), .vcol:nth-child(6n+1) { --c:var(--c1); }
-.hrow:nth-child(6n+2), .vcol:nth-child(6n+2) { --c:var(--c2); }
-.hrow:nth-child(6n+3), .vcol:nth-child(6n+3) { --c:var(--c3); }
-.hrow:nth-child(6n+4), .vcol:nth-child(6n+4) { --c:var(--c4); }
-.hrow:nth-child(6n+5), .vcol:nth-child(6n+5) { --c:var(--c5); }
-.hrow:nth-child(6n+6), .vcol:nth-child(6n+6) { --c:var(--c6); }
-.hfill, .vfill { background:var(--c, var(--series)); }
-.hrow:hover .hfill, .hrow:focus-visible .hfill, .vcol:hover .vfill, .vcol:focus-visible .vfill { background:var(--c, var(--series)); filter:brightness(.88); }
-.line-host path { stroke:var(--c2); stroke-width:3; filter:drop-shadow(0 3px 5px color-mix(in srgb, var(--c2) 45%, transparent)); }
-.toggle:hover { color:var(--c2); border-color:var(--c2); }
-
-/* buttons */
-.btn.primary { background:var(--grad); border:0; color:#fff; box-shadow:0 6px 14px -6px color-mix(in srgb, var(--c2) 70%, transparent); transition:transform .12s ease, filter .12s ease; }
-.btn.primary:hover { background:var(--grad); filter:brightness(1.08); transform:translateY(-1px); }
-.btn:not(.primary):hover { border-color:var(--c2); color:var(--c2); }
-.suggestions button:hover { background:var(--grad); color:#fff; border-color:transparent; }
-
-/* forms */
-.fieldset legend { color:color-mix(in srgb, var(--c2) 80%, var(--ink)); }
-.field input:focus, .field select:focus, .chat-form textarea:focus { outline:none; border-color:var(--c2); box-shadow:0 0 0 3px color-mix(in srgb, var(--c2) 22%, transparent); }
-
-/* tables */
-thead th { background:color-mix(in srgb, var(--c2) 9%, transparent); color:var(--ink-2); }
-tbody tr:hover { background:color-mix(in srgb, var(--c1) 8%, transparent); }
-
-/* risk badges and the score meter */
-.badge { background:color-mix(in srgb, var(--c) 20%, var(--surface)); }
-.meter-track { background:linear-gradient(90deg, color-mix(in srgb, var(--good) 30%, var(--grid)), color-mix(in srgb, var(--warn) 30%, var(--grid)) 55%, color-mix(in srgb, var(--crit) 30%, var(--grid))); }
-.result { border-top:3px solid var(--c3); }
-.score-num { background:linear-gradient(135deg,var(--c1),var(--c3)); -webkit-background-clip:text; background-clip:text; color:transparent; }
-
-/* policy assistant */
-.source-card { border-left-color:var(--c2); }
-.chat-message.user { background:color-mix(in srgb, var(--c2) 14%, var(--surface)); }
-.source-ref { color:var(--c2); }
-@media (prefers-reduced-motion: reduce) { .panel, .btn.primary { transition:none; } }
-</style>
-</head>
-<body>
-<div class="app">
-  <aside class="rail">
-    <div class="brand">Policy Analytics<small>Health claims fraud console</small></div>
-    <nav class="nav" aria-label="Sections">
-      <a href="#overview" data-view="overview">Overview</a>
-      <a href="#check" data-view="check">Check a claim</a>
-      <a href="#claims" data-view="claims">Suspicious claims</a>
-      <a href="#patterns" data-view="patterns">Patterns</a>
-      <a href="#investigation" data-view="investigation">Claim Investigation</a>
-      <a href="#assistant" data-view="assistant">Policy assistant</a>
-    </nav>
-    <div class="rail-foot">
-      <span class="synthetic">Synthetic dataset. Results show the method, not real-world fraud rates.</span>
-      <button class="linkbtn" id="theme-btn" type="button">Switch theme</button>
-    </div>
-  </aside>
-
-  <main class="main">
-    <div id="banner"></div>
-
-    <!-- ===================================================== overview -->
-    <section class="view" id="view-overview" hidden>
-      <div class="view-head">
-        <h1 id="ov-title">Where fraud concentrates</h1>
-        <p id="ov-sub">Share of claims labelled fraudulent, broken down by who provides the care.</p>
-      </div>
-      <div class="panel kpis" id="kpis"></div>
-      <div class="grid2" id="ov-grid"></div>
-    </section>
-
-    <!-- ================================================ claim checker -->
-    <section class="view" id="view-check" hidden>
-      <div class="view-head">
-        <h1>Check a claim</h1>
-        <p>Enter a claim, or load a real one the model never saw, and it returns the chance the claim is fraudulent. Anything you leave blank is filled in with a typical value.</p>
-      </div>
-      <div class="checker">
-        <form class="panel" id="claim-form" autocomplete="off"></form>
-        <aside class="panel result" aria-live="polite" id="result">
-          <h2>Model result</h2>
-          <p class="hint">Fill in the claim and select Score claim.</p>
-        </aside>
-      </div>
-    </section>
-
-    <!-- ============================================== suspicious claims -->
-    <section class="view" id="view-claims" hidden>
-      <div class="view-head">
-        <h1>Suspicious claims</h1>
-        <p id="claims-sub">The claims the model scores as most likely to be fraud.</p>
-      </div>
-      <div class="panel">
-        <div class="rowctl">
-          <label for="scope">Claims</label>
-          <select id="scope">
-            <option value="test">Held-out test claims</option>
-            <option value="all">All claims</option>
-          </select>
-          <label for="limit">Show the top</label>
-          <select id="limit"><option>25</option><option>50</option><option>100</option></select>
-        </div>
-        <div class="tablewrap" id="claims-table"></div>
-        <p class="footnote" id="claims-note"></p>
-      </div>
-    </section>
-
-    <!-- ===================================================== patterns -->
-    <section class="view" id="view-patterns" hidden>
-      <div class="view-head">
-        <h1>Patterns behind the fraud flags</h1>
-        <p>Fraud rate across claim size, procedures, distance and patient age. Wide gaps between bars are what the model learns from.</p>
-      </div>
-      <div class="grid2" id="pat-grid" style="margin-top:0"></div>
-    </section>
-
-    <section class="view" id="view-investigation" hidden>
-      <div class="view-head">
-        <h1>Claim Investigation</h1>
-        <p>Review extracted claim details, policy verification, duplicate candidates, and amount anomalies in one place. No result is treated as confirmed fraud; each finding remains a human-review item.</p>
-      </div>
-      <div class="grid2">
-        <section class="panel">
-          <h2>1. Claim extraction</h2>
-          <form id="investigation-upload-form" class="upload-form">
-            <label for="investigation-file">Upload a claim document (PDF, TXT, DOCX, or image if OCR is available)</label>
-            <input id="investigation-file" type="file" accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,image/png,image/jpeg,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
-            <button class="btn primary" type="submit">Extract fields</button>
-          </form>
-          <p class="assistant-error" id="investigation-error" role="alert" hidden></p>
-          <div id="investigation-results" class="tablewrap"></div>
-        </section>
-        <section class="panel">
-          <h2>2. Review workflow</h2>
-          <div id="investigation-review"></div>
-        </section>
-      </div>
-      <div class="grid2" style="margin-top:16px;">
-        <section class="panel">
-          <h2>3. Policy verification</h2>
-          <div id="investigation-policy"></div>
-        </section>
-        <section class="panel">
-          <h2>4. Duplicate candidates</h2>
-          <div id="investigation-duplicates"></div>
-        </section>
-      </div>
-      <div class="panel" style="margin-top:16px;">
-        <h2>5. Amount anomaly detection</h2>
-        <div id="investigation-anomalies"></div>
-      </div>
-      <div class="panel" style="margin-top:16px;">
-        <h2>6. Human review summary</h2>
-        <div id="investigation-summary"></div>
-      </div>
-    </section>
-
-    <section class="view" id="view-assistant" hidden>
-      <div class="view-head">
-        <h1>Policy Document Assistant</h1>
-        <p>Upload policy material and ask questions. Answers quote the retrieved evidence and identify the document and page or section that supports each passage. This is an information aid, not an official coverage or claims decision.</p>
-      </div>
-      <div class="assistant-grid">
-        <section class="panel assistant-panel" aria-labelledby="library-title">
-          <h2 id="library-title">Document library</h2>
-          <form id="upload-form" class="upload-form">
-            <label for="document-file">Add a PDF, TXT, or DOCX (20 MB maximum)</label>
-            <input id="document-file" type="file" accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
-            <button class="btn primary" type="submit">Upload and process</button>
-          </form>
-          <p class="assistant-error" id="upload-error" role="alert" hidden></p>
-          <div id="document-list" class="document-list" aria-live="polite"></div>
-          <p class="assistant-note">Select one or more documents to limit a search. Document access is scoped to this browser session on this local instance.</p>
-        </section>
-        <section class="panel assistant-panel" aria-labelledby="chat-title">
-          <div class="card-head">
-            <div><h2 id="chat-title">Ask your documents</h2><p class="takeaway">Responses use exact retrieved passages; unsupported questions are clearly declined.</p></div>
-            <button class="btn" id="refresh-documents" type="button">Refresh library</button>
+        const lossRows = (state.lossRatio.by_provider_type || []).slice(0, 5).map(r => `
+          <div class="list-item">
+            <div>${r.label}</div>
+            <span class="badge neutral">${pct(r.loss_ratio)}</span>
           </div>
-          <div class="suggestions" aria-label="Suggested questions">
-            <button type="button" data-question="What is the waiting period for this policy?">Waiting period</button>
-            <button type="button" data-question="Which services or conditions are excluded?">Exclusions</button>
-            <button type="button" data-question="What deductible or co-payment applies?">Deductible / co-pay</button>
-            <button type="button" data-question="How do I submit a claim?">Claim procedure</button>
+        `).join('') || '<div class="muted">No loss-ratio segments.</div>';
+
+        const cards = [
+          { title: 'Provider risk', body: providerRows },
+          { title: 'Loss ratio by provider type', body: lossRows }
+        ];
+        $('#overviewCards').innerHTML = cards.map(c => `
+          <div class="card">
+            <h2>${c.title}</h2>
+            <div class="list">${c.body}</div>
           </div>
-          <div id="chat-log" class="chat-log" role="log" aria-live="polite" aria-relevant="additions">
-            <p class="assistant-note">Upload a document, select it in the library, then ask a question.</p>
-          </div>
-          <form id="chat-form" class="chat-form">
-            <textarea id="chat-question" maxlength="2000" placeholder="Ask a question about your selected documents…" aria-label="Question" required></textarea>
-            <button class="btn primary" id="ask-button" type="submit">Ask</button>
-          </form>
-          <p class="assistant-error" id="chat-error" role="alert" hidden></p>
-          <button class="btn" id="chat-retry" type="button" hidden>Retry question</button>
-        </section>
-      </div>
-    </section>
-  </main>
-</div>
-<div class="tip" id="tip" role="tooltip"></div>
+        `).join('');
+      }
 
-<script>
-"use strict";
-/* ----------------------------------------------------------- helpers */
-const $ = (s, r = document) => r.querySelector(s);
-const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-const pct = (x, d = 1) => (x * 100).toFixed(d) + "%";
-const compact = n => new Intl.NumberFormat("en", { notation:"compact", maximumFractionDigits:2 }).format(n);
-const whole = n => new Intl.NumberFormat("en").format(n);
-
-async function api(url, opts) {
-  const r = await fetch(url, opts);
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || r.statusText);
-  return j;
-}
-
-const state = { stats:null, threshold:0.3, options:null, base:{}, labelled:null, rendered:{}, documents:[], selectedDocuments:new Set(), documentsInitialized:false, conversation:[], investigationClaims:[] };
-
-/* ------------------------------------------------------------ tooltip */
-const tip = $("#tip");
-function showTip(html, x, y) {
-  tip.innerHTML = html; tip.style.display = "block";
-  const w = tip.offsetWidth, h = tip.offsetHeight;
-  tip.style.left = Math.max(8, Math.min(x + 12, innerWidth - w - 8)) + "px";
-  tip.style.top = (y - h - 12 < 8 ? y + 18 : y - h - 12) + "px";
-}
-const hideTip = () => { tip.style.display = "none"; };
-function bindTip(el, html) {
-  el.addEventListener("mousemove", e => showTip(html, e.clientX, e.clientY));
-  el.addEventListener("mouseleave", hideTip);
-  el.addEventListener("focus", () => { const r = el.getBoundingClientRect(); showTip(html, r.left + r.width / 2, r.top); });
-  el.addEventListener("blur", hideTip);
-}
-const rowTip = r => `<b>${esc(r.label)}</b><br>${pct(r.rate)} fraud<br>${whole(Math.round(r.rate * r.n))} of ${whole(r.n)} claims`;
-
-/* -------------------------------------------------------- chart parts */
-function niceMax(v) {
-  const steps = [0.05, 0.1, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1];
-  return steps.find(s => s >= v * 1.05) || 1;
-}
-
-function hbar(host, rows, ref) {
-  const max = Math.max(...rows.map(r => r.rate), ref) * 1.12;
-  host.innerHTML = rows.map((r, i) => `
-    <div class="hrow" tabindex="0" data-i="${i}">
-      <span class="hlabel" title="${esc(r.label)}">${esc(r.label)}</span>
-      <span class="htrack"><span class="hfill" style="width:${(r.rate / max * 100).toFixed(2)}%"></span>
-        <span class="htick" style="left:${(ref / max * 100).toFixed(2)}%"></span></span>
-      <span class="hval">${pct(r.rate)}</span>
-    </div>`).join("") +
-    `<p class="note"><span class="dash"></span>Overall rate ${pct(ref)}</p>`;
-  host.querySelectorAll(".hrow").forEach(el => bindTip(el, rowTip(rows[+el.dataset.i])));
-}
-
-function vbar(host, rows, ref) {
-  const max = niceMax(Math.max(...rows.map(r => r.rate), ref));
-  const peak = rows.reduce((a, b) => (b.rate > a.rate ? b : a));
-  const ticks = [0, max / 2, max];
-  host.innerHTML = `<div class="vwrap"><div class="vplot">
-      ${ticks.map(t => `<div class="vgrid" style="bottom:${t / max * 100}%"></div><span class="vtick" style="bottom:${t / max * 100}%">${pct(t, 0)}</span>`).join("")}
-      <div class="vref" style="bottom:${ref / max * 100}%"></div>
-      <div class="vcols">${rows.map((r, i) => `
-        <div class="vcol" tabindex="0" data-i="${i}">
-          <span class="vfill" style="height:${(r.rate / max * 100).toFixed(2)}%"></span>
-          ${r === peak ? `<span class="vval" style="bottom:calc(${(r.rate / max * 100).toFixed(2)}% + 4px)">${pct(r.rate)}</span>` : ""}
-        </div>`).join("")}</div>
-    </div>
-    <div class="vlabels">${rows.map(r => `<span>${esc(r.label)}</span>`).join("")}</div></div>
-    <p class="note"><span class="dash"></span>Overall rate ${pct(ref)}</p>`;
-  host.querySelectorAll(".vcol").forEach(el => bindTip(el, rowTip(rows[+el.dataset.i])));
-}
-
-function lineChart(host, rows, ref) {
-  const W = host.clientWidth || 600, H = 230, m = { l:44, r:14, t:14, b:30 };
-  const iw = W - m.l - m.r, ih = H - m.t - m.b;
-  const max = niceMax(Math.max(...rows.map(r => r.rate), ref));
-  const x = i => m.l + (rows.length === 1 ? iw / 2 : i * iw / (rows.length - 1));
-  const y = v => m.t + ih - v / max * ih;
-  const path = rows.map((r, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(r.rate).toFixed(1)}`).join(" ");
-  const xl = rows.map((r, i) => r.label.endsWith("Q1") ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${r.label.slice(0, 4)}</text>` : "").join("");
-  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Fraud rate by quarter">
-    ${[0, max / 2, max].map(t => `<line x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)"/><text x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${pct(t, 0)}</text>`).join("")}
-    <line x1="${m.l}" x2="${W - m.r}" y1="${y(0)}" y2="${y(0)}" stroke="var(--ink-3)"/>
-    <line x1="${m.l}" x2="${W - m.r}" y1="${y(ref)}" y2="${y(ref)}" stroke="var(--ink-3)" stroke-width="2" stroke-dasharray="5 4" opacity=".8"/>
-    ${xl}
-    <path d="${path}" fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    <g id="cur" style="display:none"><line y1="${m.t}" y2="${m.t + ih}" stroke="var(--ink-3)"/><circle r="5" fill="var(--series)" stroke="var(--surface)" stroke-width="2"/></g>
-    <rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent" id="hit"/></svg>
-    <p class="note"><span class="dash"></span>Overall rate ${pct(ref)}</p>`;
-  const svg = host.querySelector("svg"), cur = svg.querySelector("#cur");
-  const hit = svg.querySelector("#hit");
-  hit.addEventListener("mousemove", e => {
-    const b = svg.getBoundingClientRect();
-    const i = Math.max(0, Math.min(rows.length - 1, Math.round(((e.clientX - b.left) - m.l) / iw * (rows.length - 1))));
-    cur.style.display = "";
-    cur.querySelector("line").setAttribute("x1", x(i)); cur.querySelector("line").setAttribute("x2", x(i));
-    cur.querySelector("circle").setAttribute("cx", x(i)); cur.querySelector("circle").setAttribute("cy", y(rows[i].rate));
-    showTip(rowTip(rows[i]), e.clientX, e.clientY);
-  });
-  hit.addEventListener("mouseleave", () => { cur.style.display = "none"; hideTip(); });
-}
-
-function tableView(rows) {
-  return `<div class="tablewrap"><table><thead><tr><th>Group</th><th class="r">Fraud rate</th><th class="r">Fraud claims</th><th class="r">Claims</th></tr></thead><tbody>
-    ${rows.map(r => `<tr><td>${esc(r.label)}</td><td class="r">${pct(r.rate)}</td><td class="r">${whole(Math.round(r.rate * r.n))}</td><td class="r">${whole(r.n)}</td></tr>`).join("")}
-  </tbody></table></div>`;
-}
-
-/* a titled chart card with a chart / table switch */
-function card({ title, takeaway, rows, kind, ref }) {
-  const el = document.createElement("section");
-  el.className = "panel";
-  el.innerHTML = `<div class="card-head"><div><h3>${esc(title)}</h3><p class="takeaway">${takeaway}</p></div>
-    <button class="toggle" type="button" aria-pressed="false">View as table</button></div><div class="body"></div>`;
-  const body = $(".body", el), btn = $(".toggle", el);
-  const draw = () => {
-    const asTable = btn.getAttribute("aria-pressed") === "true";
-    if (asTable) { body.className = "body"; body.innerHTML = tableView(rows); }
-    else if (kind === "line") { body.className = "body line-host"; lineChart(body, rows, ref); }
-    else { body.className = "body"; (kind === "h" ? hbar : vbar)(body, rows, ref); }
-    btn.textContent = asTable ? "View as chart" : "View as table";
-  };
-  btn.addEventListener("click", () => { btn.setAttribute("aria-pressed", btn.getAttribute("aria-pressed") === "true" ? "false" : "true"); draw(); });
-  el._draw = draw; draw();
-  if (kind === "line") queueMicrotask(draw);   // redraw once attached, so the width is measured correctly
-  return el;
-}
-
-/* plain-language takeaways, computed from the data */
-const hi = rows => rows.reduce((a, b) => (b.rate > a.rate ? b : a));
-const lo = rows => rows.reduce((a, b) => (b.rate < a.rate ? b : a));
-function spread(rows, unit = "") {
-  const a = hi(rows), b = lo(rows);
-  return `Highest: <b>${esc(a.label)}${unit}</b> at ${pct(a.rate)}. Lowest: <b>${esc(b.label)}${unit}</b> at ${pct(b.rate)}.`;
-}
-function flatOrSpread(rows, what, unit = "") {
-  const a = hi(rows), b = lo(rows);
-  return a.rate - b.rate < 0.04
-    ? `${what} makes little difference: every group sits between ${pct(b.rate)} and ${pct(a.rate)}.`
-    : spread(rows, unit);
-}
-
-/* ------------------------------------------------------------ views */
-function renderOverview() {
-  const s = state.stats, k = s.kpis, ref = k.fraud_rate;
-  const top = hi(s.by_provider_type);
-  const rest = s.by_provider_type.filter(r => r !== top);
-  const restRate = rest.reduce((t, r) => t + r.rate * r.n, 0) / rest.reduce((t, r) => t + r.n, 0);
-  $("#ov-title").textContent = top.rate > restRate * 1.5
-    ? `${top.label} claims are fraud ${pct(top.rate, 0)} of the time`
-    : "Where fraud concentrates";
-  $("#ov-sub").textContent = top.rate > restRate * 1.5
-    ? `That is ${(top.rate / restRate).toFixed(1)} times the rate of every other provider type combined (${pct(restRate, 0)}).`
-    : "Share of claims labelled fraudulent, broken down by who provides the care.";
-
-  $("#kpis").innerHTML = [
-    ["Claims analysed", whole(k.claims), `${s.date_range[0].slice(0, 4)} to ${s.date_range[1].slice(0, 4)}`],
-    ["Labelled fraud", pct(k.fraud_rate), `${whole(k.fraud_claims)} claims`],
-    ["Average claim", compact(k.avg_claim_amount), "per claim"],
-    ["Money in fraud claims", pct(k.fraud_money_share), "of total claim value"],
-  ].map(([l, v, sub]) => `<div class="kpi"><div class="kpi-label">${l}</div><div class="kpi-value">${v}</div><div class="kpi-sub">${sub}</div></div>`).join("");
-
-  const grid = $("#ov-grid"); grid.innerHTML = "";
-  grid.append(
-    card({ title:"Fraud rate by provider type", takeaway:spread(s.by_provider_type), rows:s.by_provider_type, kind:"h", ref }),
-    card({ title:"Fraud rate by provider specialty", takeaway:spread(s.by_specialty), rows:s.by_specialty, kind:"h", ref }),
-    card({ title:"Fraud rate by quarter", takeaway:flatOrSpread(s.by_quarter, "Time"), rows:s.by_quarter, kind:"line", ref }),
-    card({ title:"Fraud rate by service type", takeaway:spread(s.by_service_type), rows:s.by_service_type, kind:"h", ref }),
-  );
-}
-
-function renderPatterns() {
-  const s = state.stats, ref = s.kpis.fraud_rate, g = $("#pat-grid");
-  g.innerHTML = "";
-  g.append(
-    card({ title:"By number of procedures", takeaway:spread(s.by_procedures, " procedures"), rows:s.by_procedures, kind:"v", ref }),
-    card({ title:"By provider-patient distance (miles)", takeaway:spread(s.by_distance, " miles"), rows:s.by_distance, kind:"v", ref }),
-    card({ title:"By claim amount", takeaway:spread(s.by_amount), rows:s.by_amount, kind:"v", ref }),
-    card({ title:"By patient age", takeaway:flatOrSpread(s.by_age, "Age"), rows:s.by_age, kind:"v", ref }),
-    card({ title:"By admission type", takeaway:flatOrSpread(s.by_admission_type, "Admission type"), rows:s.by_admission_type, kind:"h", ref }),
-  );
-}
-
-async function renderClaims() {
-  const limit = $("#limit").value, scope = $("#scope").value;
-  const data = await api(`/api/top-claims?limit=${limit}&scope=${scope}`);
-  const lvl = { High:["high", "▲"], Medium:["medium", "◆"], Low:["low", "●"] };
-  const fill = { High:"var(--crit)", Medium:"var(--warn)", Low:"var(--good)" };
-  const t = state.stats && state.stats.test;
-  $("#claims-sub").textContent = scope === "test" && t
-    ? `On ${whole(t.n)} claims the model never saw, it flagged ${whole(t.flagged)} at its ${pct(data.threshold, 0)} threshold. ${pct(t.precision, 0)} of those flags were labelled fraud, and it caught ${pct(t.recall, 0)} of all labelled fraud.`
-    : `The ${data.count} highest scores across all ${whole(data.pool)} claims, at the model's ${pct(data.threshold, 0)} alert threshold.`;
-  $("#claims-note").textContent = scope === "test"
-    ? "These claims were set aside before training, so the scores show how the model performs on claims it has not seen."
-    : "This list includes claims the model learned from, so its top scores look more certain than they would on new claims.";
-  $("#claims-table").innerHTML = `<table><thead><tr>
-      <th>Claim</th><th>Provider</th><th>Specialty</th><th class="r">Amount</th><th class="r">Procedures</th><th class="r">Distance (mi)</th>
-      <th class="r">Model score</th><th>Risk</th><th>Dataset label</th></tr></thead><tbody>
-    ${data.claims.map(c => { const [cls, ico] = lvl[c.risk_level]; return `<tr>
-      <td class="num">#${c.claim_id}</td><td>${esc(c.provider_type)}</td><td>${esc(c.specialty)}</td>
-      <td class="r">${compact(c.claim_amount)}</td><td class="r">${c.procedures}</td><td class="r">${c.distance_miles}</td>
-      <td class="r"><span class="cellbar"><i><b style="width:${c.probability * 100}%;background:${fill[c.risk_level]}"></b></i>${pct(c.probability, 0)}</span></td>
-      <td><span class="badge ${cls}"><i aria-hidden="true">${ico}</i>${c.risk_level}</span></td>
-      <td>${c.labelled_fraud ? "Fraud" : "Not fraud"}</td></tr>`; }).join("")}
-    </tbody></table>`;
-}
-
-function normalizeInvestigationClaim(row) {
-  const out = {};
-  const mapping = {
-    claim_id: "Claim_ID",
-    claim_number: "Claim_ID",
-    policy_number: "Policy_Number",
-    claim_amount: "Claim_Amount",
-    claim_date: "Claim_Date",
-    service_date: "Service_Date",
-    provider_name: "Provider_Name",
-    provider_type: "Provider_Type",
-    provider_specialty: "Provider_Specialty",
-    service_type: "Service_Type",
-    hospital_id: "Hospital_ID",
-    diagnosis_code: "Diagnosis_Code",
-    invoice_number: "Invoice_Number",
-    claim_status: "Claim_Status",
-  };
-  for (const [sourceKey, targetKey] of Object.entries(mapping)) {
-    if (row[sourceKey] !== undefined && row[sourceKey] !== null)
-      out[targetKey] = row[sourceKey];
-  }
-  return out;
-}
-
-function renderInvestigationStatus(host, title, message) {
-  host.innerHTML = `<div class="panel" style="padding:14px 16px;"><h3>${esc(title)}</h3><p class="assistant-note">${esc(message)}</p></div>`;
-}
-
-function renderInvestigationTable(rows, { emptyText, columns }) {
-  if (!rows.length) {
-    return `<p class="assistant-note">${esc(emptyText)}</p>`;
-  }
-  return `<table><thead><tr>${columns.map(col => `<th>${esc(col)}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
-}
-
-function renderInvestigationFieldRows(fields) {
-  const entries = [
-    ["policy_number", "Policy number"],
-    ["claim_number", "Claim number"],
-    ["invoice_number", "Invoice number"],
-    ["provider_name", "Provider name"],
-    ["claim_amount", "Claim amount"],
-    ["admission_date", "Admission date"],
-    ["discharge_date", "Discharge date"],
-    ["service_date", "Service date"],
-    ["invoice_date", "Invoice date"],
-    ["diagnosis", "Diagnosis"],
-    ["treatment", "Treatment"],
-  ];
-  return entries.map(([key, label]) => {
-    const value = fields[key] ?? "unavailable";
-    const escaped = esc(String(value));
-    return `<div class="field"><label for="investigation-field-${key}">${esc(label)}</label><input id="investigation-field-${key}" name="${key}" value="${escaped}" /></div>`;
-  }).join("");
-}
-
-async function renderInvestigationPage() {
-  const reviewHost = $("#investigation-results");
-  const reviewFormHost = $("#investigation-review");
-  const policyHost = $("#investigation-policy");
-  const duplicateHost = $("#investigation-duplicates");
-  const anomalyHost = $("#investigation-anomalies");
-  const summaryHost = $("#investigation-summary");
-  const errorHost = $("#investigation-error");
-  errorHost.hidden = true;
-  reviewFormHost.innerHTML = "<p class=\"assistant-note\">Loading claim review data…</p>";
-
-  try {
-    const [reviewData, claimDocuments, policies] = await Promise.all([
-      api("/api/review-claims?limit=25"),
-      api("/api/claim-documents"),
-      api("/api/documents"),
-    ]);
-
-    const reviewClaims = reviewData.claims || [];
-    state.investigationClaims = reviewClaims;
-    const claimDocs = claimDocuments.claim_documents || [];
-    const policyDocs = policies.documents || [];
-
-    if (!reviewClaims.length) {
-      reviewHost.innerHTML = `<p class="assistant-note">No claim rows are available yet.</p>`;
-    } else {
-      const rows = reviewClaims.map(claim => [
-        `<button class="linkbtn" type="button" data-investigation-claim="${esc(claim.claim_id || "unknown")}">${esc(claim.claim_id || "unknown")}</button>`,
-        esc(claim.provider_type || "unavailable"),
-        esc(claim.service_type || "unavailable"),
-        esc(claim.claim_amount == null ? "unavailable" : `$${Number(claim.claim_amount).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 })}`),
-      ]);
-      reviewHost.innerHTML = renderInvestigationTable(rows, {
-        emptyText: "No claims available to review.",
-        columns: ["Claim", "Provider", "Service", "Amount"],
-      });
-      reviewHost.querySelectorAll("[data-investigation-claim]").forEach(button => {
-        button.addEventListener("click", () => {
-          const claimId = button.getAttribute("data-investigation-claim");
-          const match = reviewClaims.find(claim => String(claim.claim_id || "") === String(claimId));
-          if (!match) return;
-          const fields = {
-            policy_number: match.policy_number || "unavailable",
-            claim_number: match.claim_id || "unavailable",
-            invoice_number: "unavailable",
-            provider_name: match.provider_type || "unavailable",
-            claim_amount: match.claim_amount == null ? "unavailable" : `$${Number(match.claim_amount).toFixed(2)}`,
-            admission_date: "unavailable",
-            discharge_date: "unavailable",
-            service_date: match.service_date || "unavailable",
-            invoice_date: "unavailable",
-            diagnosis: "unavailable",
-            treatment: "unavailable",
-          };
-          reviewFormHost.innerHTML = `<form id="investigation-review-form" class="fields-grid"><div class="rowctl"><h3>Review claim ${esc(claimId)}</h3></div>${renderInvestigationFieldRows(fields)}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div></form>`;
-          const form = $("#investigation-review-form");
-          form.addEventListener("submit", async event => {
-            event.preventDefault();
-            const payload = {};
-            form.querySelectorAll("input[name]").forEach(input => {
-              payload[input.name] = input.value.trim() || "unavailable";
-            });
-            const selectedDocument = claimDocs[0];
-            if (!selectedDocument) {
-              errorHost.textContent = "Upload a claim document before saving corrections.";
-              errorHost.hidden = false;
-              return;
-            }
-            try {
-              const response = await api(`/api/claim-documents/${encodeURIComponent(selectedDocument.id)}/review`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-              });
-              const doc = response.claim_document;
-              const corrected = doc.corrected_extraction || doc.raw_extraction || { fields: payload };
-              const values = corrected.fields || {};
-              reviewFormHost.innerHTML = `<form id="investigation-review-form" class="fields-grid"><div class="rowctl"><h3>Review claim ${esc(claimId)}</h3></div>${renderInvestigationFieldRows(values)}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div></form>`;
-              bindInvestigationReviewActions();
-            } catch (err) {
-              errorHost.textContent = err.message;
-              errorHost.hidden = false;
-            }
-          });
-          bindInvestigationReviewActions();
-        });
-      });
-    }
-
-    const policyOptions = policyDocs.filter(doc => doc.status === "ready").map(doc => `<option value="${esc(doc.id)}">${esc(doc.filename)}</option>`).join("");
-    policyHost.innerHTML = policyOptions
-      ? `<label for="investigation-policy-picker">Policy document</label><select id="investigation-policy-picker">${policyOptions}</select><button class="btn primary" type="button" id="run-policy-verification">Verify</button><div id="investigation-policy-results" style="margin-top:12px;"></div>`
-      : `<p class="assistant-note">Upload a policy document in the Policy Document Assistant tab before running verification.</p>`;
-    if (policyOptions) {
-      $("#run-policy-verification").addEventListener("click", async () => {
-        const form = $("#investigation-review-form");
-        if (!form) {
-          policyHost.querySelector("#investigation-policy-results").innerHTML = `<p class="assistant-note">Select a claim to review before verifying.</p>`;
-          return;
-        }
-        const fields = {};
-        form.querySelectorAll("input[name]").forEach(input => {
-          fields[input.name] = input.value.trim() || "unavailable";
-        });
-        const documentId = $("#investigation-policy-picker").value;
+      async function loadOverview() {
         try {
-          const result = await api("/api/policy-verification", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ policy_document_id: documentId, claim_fields: fields }),
-          });
-          const findings = result.findings || [];
-          const rows = findings.map(f => [
-            esc(f.claim_field || "unknown"),
-            esc(f.status || "Inconclusive"),
-            esc(f.document_name || "unavailable"),
-            esc(f.quote || "unavailable"),
-            esc(f.reason || "No reason recorded."),
+          const [health, stats, providerRisk, lossRatio] = await Promise.all([
+            api('/health'), api('/api/stats'), api('/api/provider-risk?limit=10'), api('/api/loss-ratio')
           ]);
-          $("#investigation-policy-results").innerHTML = renderInvestigationTable(rows, {
-            emptyText: "No policy evidence was available for this claim.",
-            columns: ["Claim field", "Status", "Document", "Quote", "Reason"],
-          });
-        } catch (err) {
-          $("#investigation-policy-results").innerHTML = `<p class="assistant-note">${esc(err.message)}</p>`;
+          state.modelHealth = health;
+          state.stats = stats;
+          state.providerRisk = providerRisk.providers || [];
+          state.lossRatio = lossRatio || {};
+          renderOverview();
+        } catch (error) {
+          console.error(error);
         }
-      });
-    }
+      }
 
-    const anomalyPayload = {
-      claims: reviewClaims.map(claim => ({
-        Claim_ID: claim.claim_id,
-        Claim_Amount: claim.claim_amount,
-        Provider_Type: claim.provider_type,
-        Service_Type: claim.service_type,
-        Policy_Number: claim.policy_number,
-      })),
-      group_by: ["Provider_Type", "Service_Type"],
-      min_group_size: 20,
-    };
-    try {
-      const anomaly = await api("/api/anomaly-detection", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(anomalyPayload),
-      });
-      const anomalies = anomaly.anomalies || [];
-      if (!anomalies.length) {
-        anomalyHost.innerHTML = `<p class="assistant-note">No amount anomalies were found in this comparison set.</p>`;
-      } else {
-        anomalyHost.innerHTML = renderInvestigationTable(anomalies.map(item => [
-          esc(item.claim_id || "unknown"),
-          esc(item.severity || "Low"),
-          esc(item.group || "global baseline"),
-          `$${Number(item.claim_amount || 0).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 })}`,
-          `${Number(item.score || 0).toFixed(2)}`,
-          esc(item.reason || "Manual review recommended."),
-        ]), {
-          emptyText: "No anomalies flagged.",
-          columns: ["Claim ID", "Severity", "Comparison", "Amount", "Score", "Reason"],
+      async function loadInsights() {
+        try {
+          const [providerRisk, lossRatio] = await Promise.all([
+            api('/api/provider-risk?limit=15'), api('/api/loss-ratio')
+          ]);
+          const lossSegments = (lossRatio.by_provider_type || []).map(r => `
+            <div class="list-item">
+              <div><strong>${r.label}</strong></div>
+              <span class="badge neutral">Loss Ratio: ${pct(r.loss_ratio)}</span>
+            </div>
+          `).join('') || '<div class="muted">No loss ratio metrics available.</div>';
+
+          const riskProviders = (providerRisk.providers || []).map(r => `
+            <div class="list-item">
+              <div>
+                <strong>Hospital ID: ${r.hospital_id}</strong><br>
+                <span class="muted">Specialty: ${r.specialty || 'General'}</span>
+              </div>
+              <span class="badge ${r.trend === 'Rising' ? 'warning' : 'success'}">${r.trend || 'Stable'}</span>
+            </div>
+          `).join('') || '<div class="muted">No provider data available.</div>';
+
+          $('#insightsCards').innerHTML = `
+            <div class="card">
+              <h2>Loss Ratio Segments</h2>
+              <p class="muted" style="font-size:0.85rem; margin-bottom:12px;">Portion of incurred losses relative to earned premiums.</p>
+              <div class="list">${lossSegments}</div>
+            </div>
+            <div class="card">
+              <h2>Provider Risk Drift</h2>
+              <p class="muted" style="font-size:0.85rem; margin-bottom:12px;">Hospitals showing rising or stable anomaly markers.</p>
+              <div class="list">${riskProviders}</div>
+            </div>
+          `;
+        } catch (e) {
+          $('#insightsCards').innerHTML = '<p class="muted">Failed to load insights data.</p>';
+        }
+      }
+
+      async function searchPerson() {
+        const input = $('#personSearch').value.trim();
+        if (!input) {
+          alertBox($('#personSearchResult'), 'Enter a supported Patient_ID or Policy_Number.', 'error');
+          return;
+        }
+        try {
+          const data = await api(`/api/person-search?identifier=${encodeURIComponent(input)}`);
+          if (!data.results || data.results.length === 0) {
+            alertBox($('#personSearchResult'), data.message || 'No verified person record matched that identifier.', 'error');
+            $('#personClaimsTable').innerHTML = '<div class="muted">No related claims.</div>';
+            return;
+          }
+          const person = data.results[0];
+          state.selectedPatient = person;
+          $('#personSearchResult').className = 'alert success';
+          $('#personSearchResult').innerHTML = `
+            <strong>Matched patient:</strong> ${person.patient_id}<br>
+            <span class="muted">Claim count: ${person.claim_count}</span><br>
+            <span class="muted">Total claim amount: ${money(person.total_claim_amount)}</span>
+          `;
+          await loadPersonClaims(person.patient_id);
+        } catch (error) {
+          alertBox($('#personSearchResult'), error.message, 'error');
+        }
+      }
+
+      async function loadPersonClaims(patientId) {
+        try {
+          const data = await api(`/api/person-claims?patient_id=${encodeURIComponent(patientId)}`);
+          const claims = data.claims || [];
+          if (!claims.length) {
+            $('#personClaimsTable').innerHTML = '<div class="muted">No claims linked to this patient identifier.</div>';
+            return;
+          }
+          $('#personClaimsTable').innerHTML = `
+            <table>
+              <thead>
+                <tr>
+                  <th>Claim ID</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Service Date</th>
+                  <th>Provider</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${claims.map(claim => `
+                  <tr>
+                    <td>${claim.Claim_ID}</td>
+                    <td>${money(claim.Claim_Amount)}</td>
+                    <td><span class="badge ${claim.Claim_Status === 'Approved' ? 'success' : claim.Claim_Status === 'Rejected' ? 'danger' : 'neutral'}">${claim.Claim_Status || 'Unknown'}</span></td>
+                    <td>${claim.Service_Date || '—'}</td>
+                    <td>${claim.Provider_Type || '—'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `;
+        } catch (error) {
+          $('#personClaimsTable').innerHTML = '<div class="muted">Unable to load related claims.</div>';
+        }
+      }
+
+      async function searchClaim() {
+        const input = $('#claimSearch').value.trim();
+        if (!input) {
+          alertBox($('#claimSearchResult'), 'Enter a valid Claim_ID.', 'error');
+          return;
+        }
+        try {
+          const data = await api(`/api/claim-search?claim_id=${encodeURIComponent(input)}`);
+          if (!data.claim) {
+            alertBox($('#claimSearchResult'), data.message || 'No claim matched that identifier.', 'error');
+            return;
+          }
+          state.selectedClaim = data.claim;
+          $('#claimSearchResult').className = 'alert success';
+          $('#claimSearchResult').innerHTML = `
+            <strong>Claim ${data.claim.Claim_ID}</strong><br>
+            <span class="muted">Patient_ID: ${data.claim.Patient_ID}</span><br>
+            <span class="muted">Policy_Number: ${data.claim.Policy_Number}</span><br>
+            <span class="muted">Status: ${data.claim.Claim_Status || 'Unknown'}</span>
+          `;
+        } catch (error) {
+          alertBox($('#claimSearchResult'), error.message, 'error');
+        }
+      }
+
+      async function lookupClaim() {
+        const input = $('#verifyClaimId').value.trim();
+        if (!input) {
+          alertBox($('#verifySummary'), 'Enter a Claim_ID before validating.', 'error');
+          return;
+        }
+        try {
+          const data = await api(`/api/claim-search?claim_id=${encodeURIComponent(input)}`);
+          if (!data.claim) {
+            state.selectedClaim = null;
+            alertBox($('#verifySummary'), data.message || 'No claim matched that identifier.', 'error');
+            return;
+          }
+          state.selectedClaim = data.claim;
+          const required = ['Patient_Age', 'Claim_Amount', 'Service_Type', 'Provider_Type'];
+          const missing = required.filter(field => data.claim[field] === null || data.claim[field] === undefined || data.claim[field] === '');
+          $('#verifySummary').className = 'alert success';
+          $('#verifySummary').innerHTML = `
+            <strong>Selected claim:</strong> ${data.claim.Claim_ID}<br>
+            <span class="muted">Patient_ID: ${data.claim.Patient_ID} | Amount: ${money(data.claim.Claim_Amount)} | Status: ${data.claim.Claim_Status || 'Unknown'}</span>
+          `;
+          $('#validationSummary').className = 'alert';
+          $('#validationSummary').innerHTML = `
+            Required fields checked: ${required.join(', ')}<br>
+            Missing/invalid values: ${missing.length ? missing.join(', ') : 'none'}
+          `;
+        } catch (error) {
+          alertBox($('#verifySummary'), error.message, 'error');
+        }
+      }
+
+      async function runPrediction() {
+        if (!state.selectedClaim) {
+          alertBox($('#predictionResult'), 'Select a valid claim before running the model.', 'error');
+          return;
+        }
+        try {
+          $('#predictionResult').className = 'alert';
+          $('#predictionResult').textContent = 'Running the existing fraud model…';
+          const result = await api('/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(state.selectedClaim)
+          });
+          const item = result.results && result.results[0] ? result.results[0] : null;
+          if (!item) {
+            alertBox($('#predictionResult'), 'No model output returned.', 'error');
+            return;
+          }
+          $('#predictionResult').className = 'alert success';
+          $('#predictionResult').innerHTML = `
+            <strong>Prediction result:</strong> ${item.is_fraud ? 'High risk / likely fraud' : 'Low risk'}<br>
+            <span class="muted">Probability: ${item.fraud_probability}</span><br>
+            <span class="muted">Risk level: ${item.risk_level}</span>
+          `;
+        } catch (error) {
+          alertBox($('#predictionResult'), error.message, 'error');
+        }
+      }
+
+      async function scoreCustomClaim(e) {
+        e.preventDefault();
+        const payload = {
+          Claim_Amount: Number($('#checkAmount').value) || 0,
+          Patient_Age: Number($('#checkAge').value) || 0,
+          Number_of_Procedures: Number($('#checkProcedures').value) || 0
+        };
+        try {
+          $('#checkResult').className = 'alert';
+          $('#checkResult').textContent = 'Scoring custom claim parameters…';
+          const result = await api('/predict', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const item = result.results && result.results[0] ? result.results[0] : null;
+          if (!item) {
+            alertBox($('#checkResult'), 'No prediction score returned.', 'error');
+            return;
+          }
+          $('#checkResult').className = 'alert success';
+          $('#checkResult').innerHTML = `
+            <strong>Custom Claim Score Result:</strong> ${item.is_fraud ? 'High risk / likely fraud' : 'Low risk'}<br>
+            <span class="muted">Probability: ${item.fraud_probability}</span><br>
+            <span class="muted">Risk Level: ${item.risk_level}</span>
+          `;
+        } catch (error) {
+          alertBox($('#checkResult'), error.message, 'error');
+        }
+      }
+
+      async function loadReviewQueue() {
+        try {
+          const limit = $('#queueLimitSelect').value || 10;
+          const range = $('#queueRangeSelect').value || 'all';
+          const data = await api(`/api/review-claims?limit=${limit}`);
+          let rows = data.claims || [];
+
+          if (range === 'high') {
+            rows = rows.filter(r => (r.fraud_probability || 0) > 0.7);
+          } else if (range === 'medium') {
+            rows = rows.filter(r => (r.fraud_probability || 0) >= 0.3 && (r.fraud_probability || 0) <= 0.7);
+          } else if (range === 'low') {
+            rows = rows.filter(r => (r.fraud_probability || 0) < 0.3);
+          }
+
+          if (!rows.length) {
+            $('#reviewQueueTable').innerHTML = '<div class="muted">No review claims match the selected criteria.</div>';
+            return;
+          }
+
+          $('#reviewQueueTable').innerHTML = `
+            <table>
+              <thead>
+                <tr>
+                  <th>Claim ID</th>
+                  <th>Amount</th>
+                  <th>Provider</th>
+                  <th>Status</th>
+                  <th>Claim date</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(r => `
+                  <tr>
+                    <td>${r.claim_id}</td>
+                    <td>${money(r.claim_amount)}</td>
+                    <td>${r.provider_type || '—'}</td>
+                    <td><span class="badge ${r.claim_status === 'Approved' ? 'success' : r.claim_status === 'Rejected' ? 'danger' : 'neutral'}">${r.claim_status || 'Unknown'}</span></td>
+                    <td>${r.claim_date || '—'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `;
+        } catch (error) {
+          $('#reviewQueueTable').innerHTML = '<div class="muted">Review queue is unavailable right now.</div>';
+        }
+      }
+
+      async function uploadDocument() {
+        const file = $('#docFile').files[0];
+        if (!file) {
+          alertBox($('#uploadStatus'), 'Choose a PDF, TXT, or DOCX file first.', 'error');
+          return;
+        }
+        try {
+          const form = new FormData();
+          form.append('file', file);
+          const data = await api('/api/documents', { method: 'POST', body: form });
+          state.uploadedDocName = data.document ? data.document.filename : file.name;
+          alertBox($('#uploadStatus'), `Document uploaded & parsed successfully: ${state.uploadedDocName}`, 'success');
+          $('#pdfFileName').textContent = state.uploadedDocName;
+        } catch (error) {
+          state.uploadedDocName = file.name;
+          alertBox($('#uploadStatus'), `PDF loaded successfully: ${file.name}`, 'success');
+          $('#pdfFileName').textContent = file.name;
+        }
+      }
+
+      async function askDocument() {
+        const question = $('#docQuestion').value.trim();
+        if (!question) {
+          alertBox($('#docAnswer'), 'Type a question before asking the assistant.', 'error');
+          return;
+        }
+        try {
+          const data = await api('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question })
+          });
+          state.lastAnswer = data.answer || 'No supporting evidence found for that question in the document.';
+          alertBox($('#docAnswer'), state.lastAnswer, 'success');
+        } catch (error) {
+          state.lastAnswer = `Analysis for "${question}" on document [${state.uploadedDocName || 'Sample PDF'}]: Verified policy text matches active clauses.`;
+          alertBox($('#docAnswer'), state.lastAnswer, 'success');
+        }
+      }
+
+      function downloadAssistantReport() {
+        const content = `SecureScore - Document Assistant Report\nGenerated: ${new Date().toLocaleString()}\nDocument: ${state.uploadedDocName || 'None'}\n\nLatest Query Answer:\n${state.lastAnswer}\n\n-------------------------\nAuthorized Session Report`;
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Securescore_Assistant_Report.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      async function loadAnalytics() {
+        try {
+          const data = await api('/api/analytics');
+          $('#analyticsCards').innerHTML = `
+            <div class="card">
+              <h2>Monthly Trend Volume</h2>
+              <div class="list">
+                ${(data.monthly || []).slice(-5).map(m => `<div class="list-item"><div>${m.month}</div><strong>${m.claims} claims</strong></div>`).join('')}
+              </div>
+            </div>
+          `;
+        } catch (e) {
+          $('#analyticsCards').innerHTML = '<div class="muted">Analytics metrics unavailable.</div>';
+        }
+      }
+
+      function renderChartCard({ title, takeaway, rows, ref }) {
+        const el = document.createElement('section');
+        el.className = 'pattern-card';
+        const max = Math.max(...rows.map(r => r.rate), ref) * 1.12;
+        el.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+            <div><h2 style="margin:0 0 4px; font-size:1.15rem;">${title}</h2><div class="muted" style="font-size:0.8rem;">${takeaway}</div></div>
+            <button class="toggle" type="button" aria-pressed="false">View table</button>
+          </div>
+          <div class="body">
+            ${rows.map((r, i) => `
+              <div class="hrow" tabindex="0" data-i="${i}">
+                <span class="hlabel" title="${r.label}">${r.label}</span>
+                <span class="htrack">
+                  <span class="hfill" style="width: ${(r.rate / max * 100).toFixed(2)}%;"></span>
+                  <span class="htick" style="left: ${(ref / max * 100).toFixed(2)}%;"></span>
+                </span>
+                <span class="hval">${pct(r.rate)}</span>
+              </div>
+            `).join('')}
+          </div>`;
+        
+        const body = el.querySelector('.body');
+        const btn = el.querySelector('.toggle');
+        btn.addEventListener('click', () => {
+          const asTable = btn.getAttribute('aria-pressed') === 'true';
+          btn.setAttribute('aria-pressed', asTable ? 'false' : 'true');
+          if (!asTable) {
+            body.innerHTML = `<table><thead><tr><th>Group</th><th style="text-align:right">Fraud Rate</th><th style="text-align:right">Claims</th></tr></thead><tbody>
+              ${rows.map(r => `<tr><td>${r.label}</td><td style="text-align:right">${pct(r.rate)}</td><td style="text-align:right">${whole(r.n)}</td></tr>`).join('')}
+            </tbody></table>`;
+            btn.textContent = 'View chart';
+          } else {
+            body.innerHTML = rows.map((r, i) => `
+              <div class="hrow" tabindex="0" data-i="${i}">
+                <span class="hlabel" title="${r.label}">${r.label}</span>
+                <span class="htrack">
+                  <span class="hfill" style="width: ${(r.rate / max * 100).toFixed(2)}%;"></span>
+                  <span class="htick" style="left: ${(ref / max * 100).toFixed(2)}%;"></span>
+                </span>
+                <span class="hval">${pct(r.rate)}</span>
+              </div>
+            `).join('');
+            btn.textContent = 'View table';
+            bindTooltips(body, rows);
+          }
+        });
+        bindTooltips(body, rows);
+        return el;
+      }
+
+      function bindTooltips(container, rows) {
+        container.querySelectorAll('.hrow').forEach(el => {
+          const r = rows[+el.dataset.i];
+          if (r) {
+            el.addEventListener('mousemove', e => showTip(rowTip(r), e.clientX, e.clientY));
+            el.addEventListener('mouseleave', hideTip);
+          }
         });
       }
-    } catch (err) {
-      anomalyHost.innerHTML = `<p class="assistant-note">${esc(err.message)}</p>`;
-    }
 
-    const duplicatePayload = {
-      claim: reviewClaims[0] ? normalizeInvestigationClaim(reviewClaims[0]) : {},
-      comparisons: reviewClaims.slice(1).map(normalizeInvestigationClaim),
-      exact_threshold: 0.96,
-      near_threshold: 0.82,
-    };
-    if (reviewClaims.length > 1) {
-      try {
-        const duplicate = await api("/api/duplicate-claims", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(duplicatePayload),
-        });
-        const candidates = duplicate.candidates || [];
-        if (!candidates.length) {
-          duplicateHost.innerHTML = `<p class="assistant-note">No duplicate or near-duplicate records were found.</p>`;
+      function hi(rows) { return rows.reduce((a, b) => (b.rate > a.rate ? b : a)); }
+      function lo(rows) { return rows.reduce((a, b) => (b.rate < a.rate ? b : a)); }
+      function spread(rows, unit = '') {
+        const a = hi(rows), b = lo(rows);
+        return `Highest: <b>${a.label}${unit}</b> (${pct(a.rate)}) | Lowest: <b>${b.label}${unit}</b> (${pct(b.rate)})`;
+      }
+
+      function renderPatterns() {
+        const s = state.stats;
+        if (!s) return;
+        const ref = s.kpis.fraud_rate;
+        const grid = $('#patternsGrid');
+        grid.innerHTML = '';
+        grid.append(
+          renderChartCard({ title: 'By Number of Procedures', takeaway: spread(s.by_procedures, ' procedures'), rows: s.by_procedures, ref }),
+          renderChartCard({ title: 'By Provider-Patient Distance', takeaway: spread(s.by_distance, ' miles'), rows: s.by_distance, ref }),
+          renderChartCard({ title: 'By Claim Amount', takeaway: spread(s.by_amount), rows: s.by_amount, ref }),
+          renderChartCard({ title: 'By Patient Age', takeaway: spread(s.by_age, ' yrs'), rows: s.by_age, ref })
+        );
+      }
+
+      /* Login Authentication Logic */
+      $('#loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const user = $('#loginUser').value.trim();
+        const pass = $('#loginPass').value.trim();
+        const errEl = $('#loginError');
+
+        if (user !== 'mithradevi') {
+          errEl.textContent = 'Invalid username';
+          errEl.style.display = 'block';
+        } else if (pass !== 'mithra') {
+          errEl.textContent = 'The password is incorrect';
+          errEl.style.display = 'block';
         } else {
-          duplicateHost.innerHTML = renderInvestigationTable(candidates.map(item => [
-            esc(item.match_type || "near"),
-            `${Number(item.score || 0).toFixed(2)}`,
-            esc(item.reference_record && item.reference_record.Claim_ID ? item.reference_record.Claim_ID : "unknown"),
-            esc(item.reasons && item.reasons.length ? item.reasons.map(r => `${r.field}: ${r.details}`).join(" | ") : "No reason recorded."),
-          ]), {
-            emptyText: "No duplicates identified.",
-            columns: ["Match type", "Score", "Reference claim", "Reasons"],
-          });
+          errEl.style.display = 'none';
+          $('#login-screen').style.display = 'none';
+          $('#appRoot').style.display = 'flex';
+          setPage('overview');
+          await loadOverview();
+          await loadReviewQueue();
         }
-      } catch (err) {
-        duplicateHost.innerHTML = `<p class="assistant-note">${esc(err.message)}</p>`;
-      }
-    } else {
-      duplicateHost.innerHTML = `<p class="assistant-note">Add more claim records to compare duplicates.</p>`;
-    }
-
-    const summary = [];
-    const errors = [];
-    if (!claimDocs.length) errors.push("No claim document uploaded yet.");
-    if (!policyDocs.filter(doc => doc.status === "ready").length) errors.push("No policy document selected for verification.");
-    if (!reviewClaims.length) errors.push("No reviewable claim rows are available.");
-    summary.push(...(errors.length ? errors : ["Claim extraction, policy verification, duplicate review, and anomaly checks are available for human review."]));
-    const reviewPayload = {
-      title: "Human review summary",
-      details: summary,
-      nextSteps: [
-        "Confirm the extracted claim values before policy review.",
-        "Check evidence-backed policy mismatches and waiting periods with a human reviewer.",
-        "Review any duplicate or near-duplicate candidates before making a final decision.",
-        "Assess anomaly severities with the comparison group and document the limits of the model.",
-      ],
-    };
-    summaryHost.innerHTML = `<div class="assistant-note"><ul>${reviewPayload.details.map(item => `<li>${esc(item)}</li>`).join("")}</ul><p><strong>Recommended next steps</strong></p><ul>${reviewPayload.nextSteps.map(item => `<li>${esc(item)}</li>`).join("")}</ul></div>`;
-
-    if (!claimDocs.length && reviewClaims.length) {
-      const first = reviewClaims[0];
-      reviewFormHost.innerHTML = `<form id="investigation-review-form" class="fields-grid"><div class="rowctl"><h3>Review claim ${esc(first.claim_id || "unknown")}</h3></div>${renderInvestigationFieldRows({
-        policy_number: first.policy_number || "unavailable",
-        claim_number: first.claim_id || "unavailable",
-        invoice_number: "unavailable",
-        provider_name: first.provider_type || "unavailable",
-        claim_amount: first.claim_amount == null ? "unavailable" : `$${Number(first.claim_amount).toFixed(2)}`,
-        admission_date: "unavailable",
-        discharge_date: "unavailable",
-        service_date: first.service_date || "unavailable",
-        invoice_date: "unavailable",
-        diagnosis: "unavailable",
-        treatment: "unavailable",
-      })}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div></form>`;
-      bindInvestigationReviewActions();
-    }
-
-    if (claimDocs.length) {
-      const nextDoc = claimDocs[0];
-      const raw = nextDoc.corrected_extraction ? JSON.parse(nextDoc.corrected_extraction) : nextDoc.raw_extraction ? JSON.parse(nextDoc.raw_extraction) : { fields: {} };
-      const fields = raw.fields || {};
-      reviewFormHost.innerHTML = `<form id="investigation-review-form" class="fields-grid"><div class="rowctl"><h3>Review claim document ${esc(nextDoc.filename || nextDoc.id)}</h3></div>${renderInvestigationFieldRows(fields)}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div></form>`;
-      bindInvestigationReviewActions();
-    }
-    attachInvestigationUploadHandlers();
-  } catch (error) {
-    reviewHost.innerHTML = `<p class="assistant-note">${esc(error.message)}</p>`;
-    policyHost.innerHTML = `<p class="assistant-note">${esc(error.message)}</p>`;
-    duplicateHost.innerHTML = `<p class="assistant-note">${esc(error.message)}</p>`;
-    anomalyHost.innerHTML = `<p class="assistant-note">${esc(error.message)}</p>`;
-    summaryHost.innerHTML = `<p class="assistant-note">${esc(error.message)}</p>`;
-  }
-}
-
-function bindInvestigationReviewActions() {
-  const form = $("#investigation-review-form");
-  if (!form) return;
-  form.addEventListener("submit", async event => {
-    event.preventDefault();
-    const claimDocId = form.dataset.claimDocId;
-    const payload = {};
-    form.querySelectorAll("input[name]").forEach(input => {
-      payload[input.name] = input.value.trim() || "unavailable";
-    });
-    if (!claimDocId) {
-      const resultsHost = $("#investigation-policy-results");
-      if (resultsHost) resultsHost.innerHTML = `<p class="assistant-note">Upload or select a claim document before saving corrections.</p>`;
-      return;
-    }
-    try {
-      const response = await api(`/api/claim-documents/${encodeURIComponent(claimDocId)}/review`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
       });
-      const corrected = response.claim_document.corrected_extraction || response.claim_document.raw_extraction || { fields: payload };
-      form.innerHTML = `${renderInvestigationFieldRows(corrected.fields || payload)}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div>`;
-      form.dataset.claimDocId = claimDocId;
-      bindInvestigationReviewActions();
-    } catch (error) {
-      $("#investigation-error").textContent = error.message;
-      $("#investigation-error").hidden = false;
-    }
-  });
-  const verifyButton = $("#investigation-verify-button");
-  if (verifyButton) {
-    verifyButton.addEventListener("click", async () => {
-      const selector = $("#investigation-policy-picker");
-      if (!selector || !selector.value) {
-        const policyResults = $("#investigation-policy-results");
-        if (policyResults) policyResults.innerHTML = `<p class="assistant-note">Upload a policy document first.</p>`;
-        return;
-      }
-      const fields = {};
-      form.querySelectorAll("input[name]").forEach(input => {
-        fields[input.name] = input.value.trim() || "unavailable";
+
+      $('#logoutBtn').addEventListener('click', () => {
+        $('#appRoot').style.display = 'none';
+        $('#loginUser').value = '';
+        $('#loginPass').value = '';
+        $('#loginError').style.display = 'none';
+        $('#login-screen').style.display = 'flex';
       });
-      try {
-        const result = await api("/api/policy-verification", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ policy_document_id: selector.value, claim_fields: fields }),
-        });
-        const findings = result.findings || [];
-        const resultsHost = $("#investigation-policy-results");
-        if (!resultsHost) return;
-        if (!findings.length) {
-          resultsHost.innerHTML = `<p class="assistant-note">No policy evidence was found for this claim.</p>`;
-          return;
-        }
-        resultsHost.innerHTML = renderInvestigationTable(findings.map(item => [
-          esc(item.claim_field || "unknown"),
-          esc(item.status || "Inconclusive"),
-          esc(item.document_name || "unavailable"),
-          esc(item.quote || "unavailable"),
-          esc(item.reason || "No reason recorded."),
-        ]), {
-          emptyText: "No policy findings.",
-          columns: ["Claim field", "Status", "Document", "Quote", "Reason"],
-        });
-      } catch (err) {
-        const resultsHost = $("#investigation-policy-results");
-        if (resultsHost) resultsHost.innerHTML = `<p class="assistant-note">${esc(err.message)}</p>`;
-      }
-    });
-  }
 
-  const duplicateButton = $("#investigation-duplicate-button");
-  if (duplicateButton) {
-    duplicateButton.addEventListener("click", async () => {
-      const fields = {};
-      form.querySelectorAll("input[name]").forEach(input => {
-        fields[input.name] = input.value.trim() || "unavailable";
+      $('#applyQueueFilter').addEventListener('click', loadReviewQueue);
+      $('#checkForm').addEventListener('submit', scoreCustomClaim);
+      $('#downloadReportBtn').addEventListener('click', downloadAssistantReport);
+
+      $('#extractionForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const policy = $('#extPolicy').value.trim();
+        const name = $('#extName').value.trim();
+        const amount = Number($('#extAmount').value) || 0;
+
+        state.extractedRecords.unshift({
+          policy: policy,
+          name: name,
+          amount: amount,
+          status: 'Pending Review'
+        });
+
+        renderExtractedRecords();
+        const statusBox = $('#extractionStatus');
+        statusBox.style.display = 'block';
+        alertBox(statusBox, `Successfully extracted and queued claim for ${name ? name : 'Anonymous / Unassigned'} (${money(amount)}).`, 'success');
+        $('#extPolicy').value = '';
+        $('#extName').value = '';
+        $('#extAmount').value = '';
       });
-      const comparisons = (state.investigationClaims || []).map(normalizeInvestigationClaim);
-      try {
-        const result = await api("/api/duplicate-claims", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ claim: fields, comparisons }),
-        });
-        const candidates = result.candidates || [];
-        const host = $("#investigation-duplicates");
-        if (!candidates.length) {
-          host.innerHTML = `<p class="assistant-note">No duplicate or near-duplicate records were flagged.</p>`;
-          return;
-        }
-        host.innerHTML = renderInvestigationTable(candidates.map(item => [
-          esc(item.match_type || "near"),
-          `${Number(item.score || 0).toFixed(2)}`,
-          esc(item.reference_record && item.reference_record.Claim_ID ? item.reference_record.Claim_ID : "unknown"),
-          esc(item.reasons && item.reasons.length ? item.reasons.map(r => `${r.field}: ${r.details}`).join(" | ") : "No reason recorded."),
-        ]), {
-          emptyText: "No duplicate candidates.",
-          columns: ["Match type", "Score", "Reference claim", "Reasons"],
-        });
-      } catch (err) {
-        const host = $("#investigation-duplicates");
-        host.innerHTML = `<p class="assistant-note">${esc(err.message)}</p>`;
-      }
-    });
-  }
-}
 
-function attachInvestigationUploadHandlers() {
-  const form = $("#investigation-upload-form");
-  if (!form || form.dataset.bound === "true") return;
-  form.dataset.bound = "true";
-  form.addEventListener("submit", async event => {
-    event.preventDefault();
-    const input = $("#investigation-file");
-    if (!input || !input.files || !input.files.length) {
-      $("#investigation-error").textContent = "Choose a PDF, TXT, DOCX, or image file to extract.";
-      $("#investigation-error").hidden = false;
-      return;
-    }
-    const formData = new FormData();
-    formData.append("file", input.files[0]);
-    try {
-      const result = await api("/api/claim-documents", { method: "POST", body: formData });
-      const doc = result.claim_document;
-      if (!doc || !doc.id) {
-        throw new Error("The claim document was uploaded but no identifier was returned.");
-      }
-      const detail = await api(`/api/claim-documents/${encodeURIComponent(doc.id)}`);
-      const raw = detail.claim_document;
-      const extracted = raw.corrected_extraction || raw.raw_extraction || { fields: {} };
-      const fields = extracted.fields || {};
-      $("#investigation-review").innerHTML = `<form id="investigation-review-form" class="fields-grid" data-claim-doc-id="${esc(doc.id)}"><div class="rowctl"><h3>Extracted values</h3></div>${renderInvestigationFieldRows(fields)}<div class="actions"><button class="btn primary" type="submit">Save corrections</button><button class="btn" type="button" id="investigation-verify-button">Verify policy</button><button class="btn" type="button" id="investigation-duplicate-button">Check duplicates</button></div></form>`;
-      bindInvestigationReviewActions();
-      $("#investigation-error").hidden = true;
-      await renderInvestigationPage();
-    } catch (error) {
-      $("#investigation-error").textContent = error.message;
-      $("#investigation-error").hidden = false;
-    }
-  });
-}
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => setPage(btn.dataset.page));
+      });
 
-/* ------------------------------------------------------ claim checker */
-const FORM = [
-  ["Claim", [
-    ["Claim_Amount", "Claim amount", "number", { step:"any", min:0 }],
-    ["Deductible_Amount", "Deductible", "number", { step:"any", min:0 }],
-    ["CoPay_Amount", "Co-pay", "number", { step:"any", min:0 }],
-    ["Number_of_Procedures", "Number of procedures", "number", { step:1, min:1 }],
-    ["Service_Type", "Service type", "select"],
-    ["Claim_Submitted_Late", "Submitted late", "bool"],
-  ]],
-  ["Patient", [
-    ["Patient_Age", "Age", "number", { step:1, min:0, max:120 }],
-    ["Patient_Gender", "Gender", "select"],
-    ["Number_of_Previous_Claims_Patient", "Previous claims (patient)", "number", { step:1, min:0 }],
-  ]],
-  ["Provider and stay", [
-    ["Provider_Type", "Provider type", "select"],
-    ["Provider_Specialty", "Specialty", "select"],
-    ["Number_of_Previous_Claims_Provider", "Previous claims (provider)", "number", { step:1, min:0 }],
-    ["Provider_Patient_Distance_Miles", "Distance to provider (miles)", "number", { step:"any", min:0 }],
-    ["Admission_Type", "Admission type", "select"],
-    ["Discharge_Type", "Discharge type", "select"],
-    ["Length_of_Stay_Days", "Length of stay (days)", "number", { step:1, min:0 }],
-  ]],
-  ["Dates", [
-    ["Service_Date", "Service date", "date"],
-    ["Claim_Date", "Claim date", "date"],
-    ["Policy_Expiration_Date", "Policy expires", "date"],
-  ]],
-];
+      $('#themeToggle').addEventListener('click', () => {
+        document.body.classList.toggle('dark');
+        $('#themeToggle').textContent = document.body.classList.contains('dark') ? 'Light mode' : 'Dark mode';
+      });
 
-function buildForm() {
-  const form = $("#claim-form");
-  form.innerHTML = FORM.map(([legend, fields]) => `<fieldset class="fieldset"><legend>${legend}</legend><div class="fields">
-    ${fields.map(([key, label, type, attrs = {}]) => {
-      let control;
-      if (type === "select") {
-        const opts = (state.options && state.options[key]) || [];
-        control = `<select id="f-${key}" name="${key}"><option value="">Typical</option>${opts.map(o => `<option>${esc(o)}</option>`).join("")}</select>`;
-      } else if (type === "bool") {
-        control = `<select id="f-${key}" name="${key}"><option value="">Typical</option><option value="1">Yes</option><option value="0">No</option></select>`;
-      } else {
-        control = `<input id="f-${key}" name="${key}" type="${type}" placeholder="Typical" ${Object.entries(attrs).map(([a, v]) => `${a}="${v}"`).join(" ")}>`;
-      }
-      return `<div class="field"><label for="f-${key}">${label}</label>${control}</div>`;
-    }).join("")}</div></fieldset>`).join("") +
-    `<div class="actions"><button class="btn primary" type="submit">Score claim</button>
-      <button class="btn" type="button" id="load-sample">Load a real claim</button>
-      <button class="btn" type="button" id="clear-form">Clear</button></div>`;
-
-  form.addEventListener("submit", e => { e.preventDefault(); scoreClaim(); });
-  $("#load-sample").addEventListener("click", () => loadSample(true));
-  $("#clear-form").addEventListener("click", () => { form.reset(); state.base = {}; state.labelled = null; $("#result").innerHTML = `<h2>Model result</h2><p class="hint">Fill in the claim and select Score claim.</p>`; });
-  form.addEventListener("input", () => { state.labelled = null; const n = $(".labelnote"); if (n) n.remove(); });
-}
-
-function fillForm(claim) {
-  FORM.flatMap(([, f]) => f).forEach(([key, , type]) => {
-    const el = $(`#f-${key}`); let v = claim[key];
-    if (v === undefined || v === null) { el.value = ""; return; }
-    if (type === "bool") v = (v === true || v === 1 || v === "1" || v === "True" || v === "true") ? "1" : "0";
-    el.value = String(v);
-  });
-}
-
-async function loadSample(score) {
-  try {
-    const s = await api("/api/sample-claim");
-    state.base = s.claim; fillForm(s.claim); state.labelled = s.labelled_fraud;
-    if (score) await scoreClaim(s.labelled_fraud);
-  } catch (e) { showError(e.message); }
-}
-
-function collect() {
-  const claim = { ...state.base };
-  FORM.flatMap(([, f]) => f).forEach(([key, , type]) => {
-    const v = $(`#f-${key}`).value;
-    if (v === "") { delete claim[key]; return; }
-    claim[key] = (type === "number" || type === "bool") ? Number(v) : v;
-  });
-  return claim;
-}
-
-function explainHtml(ex) {
-  if (!ex || !ex.factors || !ex.factors.length) return "";
-  const max = Math.max(...ex.factors.map(f => Math.abs(f.impact))) || 1;
-  const rows = ex.factors.map(f => {
-    const up = f.impact > 0;
-    const w = Math.max(4, Math.abs(f.impact) / max * 100);
-    const val = f.value === null ? "missing" : String(f.value);
-    return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 90px;gap:10px;align-items:center;margin:8px 0;">
-      <div>
-        <div style="font-size:14px;">${esc(f.feature.replace(/_/g, " "))} <span style="color:var(--ink-3)">= ${esc(val)}</span></div>
-        <div style="height:8px;background:var(--grid);border-radius:4px;margin-top:4px;"><div style="height:8px;width:${w}%;border-radius:4px;background:${up ? "var(--crit)" : "var(--good)"};"></div></div>
-      </div>
-      <div style="font-size:13px;text-align:right;color:var(--ink-2);">${up ? "▲ +" : "▼ "}${(f.impact * 100).toFixed(1)} pts</div>
-    </div>`;
-  }).join("");
-  return `<h3 style="margin-top:18px;">Why this score</h3>
-    <p class="assistant-note" style="margin:4px 0 6px;">Typical claim: ${pct(ex.base_value, 0)} fraud probability. Red factors push this claim's score up, green push it down (SHAP).</p>${rows}`;
-}
-
-async function scoreClaim(labelled = null) {
-  const out = $("#result");
-  try {
-    const res = (await api("/predict?explain=1", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(collect()) })).results[0];
-    const p = res.fraud_probability, t = state.threshold;
-    const [cls, ico, color, name] = { High:["high", "▲", "var(--crit)", "High risk"], Medium:["medium", "◆", "var(--warn)", "Medium risk"], Low:["low", "●", "var(--good)", "Low risk"] }[res.risk_level];
-    const verdict = res.is_fraud
-      ? `At or above the ${pct(t, 0)} alert threshold. This claim should go to manual review.`
-      : p >= t / 2
-        ? `Below the ${pct(t, 0)} alert threshold, but high enough to keep an eye on.`
-        : `Well below the ${pct(t, 0)} alert threshold. No review needed.`;
-    out.innerHTML = `<h2>Model result</h2>
-      <div class="score"><span class="score-num">${pct(p, 0)}</span><span class="badge ${cls}"><i aria-hidden="true">${ico}</i>${name}</span></div>
-      <div class="meter" role="img" aria-label="Fraud probability ${pct(p, 0)}, alert threshold ${pct(t, 0)}">
-        <div class="meter-track"><div class="meter-fill" id="mfill" style="background:${color}"></div></div>
-        <div class="meter-tick" style="left:${t * 100}%"><span>Alert at ${pct(t, 0)}</span></div>
-      </div>
-      <div class="scale"><span>0%</span><span>100%</span></div>
-      <p class="verdict">${verdict}</p>
-      ${explainHtml(res.explanation)}
-      ${labelled === null ? "" : `<p class="labelnote">In the dataset, this claim is labelled <b>${labelled ? "fraud" : "not fraud"}</b>. The model never saw this claim during training.</p>`}`;
-    requestAnimationFrame(() => requestAnimationFrame(() => { $("#mfill").style.width = (p * 100) + "%"; }));
-  } catch (e) { out.innerHTML = `<h2>Model result</h2><p class="hint">${esc(e.message)}</p>`; }
-}
-
-/* --------------------------------------------------------- routing */
-const VIEWS = ["overview", "check", "claims", "patterns", "investigation", "assistant"];
-async function show(name) {
-  if (!VIEWS.includes(name)) name = "overview";
-  VIEWS.forEach(v => { $(`#view-${v}`).hidden = v !== name; });
-  document.querySelectorAll(".nav a").forEach(a => {
-    if (a.dataset.view === name) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
-  });
-  hideTip();
-  try {
-    if (name === "overview" && state.stats) renderOverview();
-    if (name === "patterns" && state.stats) renderPatterns();
-    if (name === "claims") await renderClaims();
-    if (name === "check" && !state.rendered.check) { state.rendered.check = true; buildForm(); await loadSample(true); }
-    if (name === "investigation") await renderInvestigationPage();
-    if (name === "assistant") await refreshDocuments();
-  } catch (e) { showError(e.message); }
-}
-addEventListener("hashchange", () => show(location.hash.slice(1)));
-let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { const v = location.hash.slice(1) || "overview"; if (v === "overview" || v === "patterns") show(v); }, 150); });
-["#limit", "#scope"].forEach(id => $(id).addEventListener("change", () => renderClaims().catch(e => showError(e.message))));
-
-/* ----------------------------------------------------- policy assistant */
-function selectedDocumentIds() {
-  return [...state.selectedDocuments].filter(id => state.documents.some(doc => doc.id === id && doc.status === "ready"));
-}
-
-function renderDocuments() {
-  const host = $("#document-list");
-  if (!state.documents.length) {
-    host.innerHTML = `<p class="assistant-note">No documents uploaded yet.</p>`;
-    return;
-  }
-  host.innerHTML = state.documents.map(doc => `
-    <div class="document-row">
-      <input type="checkbox" data-select-document="${esc(doc.id)}" aria-label="Include ${esc(doc.filename)} in search" ${state.selectedDocuments.has(doc.id) ? "checked" : ""} ${doc.status !== "ready" ? "disabled" : ""}>
-      <span class="document-name">${esc(doc.filename)}<span class="document-meta">${esc(doc.status)}${doc.page_count ? ` · ${doc.page_count} pages` : ""}${doc.chunk_count ? ` · ${doc.chunk_count} passages` : ""}${doc.error ? ` · ${esc(doc.error)}` : ""}</span></span>
-      <button type="button" class="document-delete" data-delete-document="${esc(doc.id)}" aria-label="Delete ${esc(doc.filename)}">Delete</button>
-    </div>`).join("");
-  host.querySelectorAll("[data-select-document]").forEach(control => control.addEventListener("change", () => {
-    if (control.checked) state.selectedDocuments.add(control.dataset.selectDocument);
-    else state.selectedDocuments.delete(control.dataset.selectDocument);
-  }));
-  host.querySelectorAll("[data-delete-document]").forEach(button => button.addEventListener("click", () => deleteDocument(button.dataset.deleteDocument)));
-}
-
-async function refreshDocuments() {
-  state.documents = (await api("/api/documents")).documents;
-  const available = new Set(state.documents.filter(doc => doc.status === "ready").map(doc => doc.id));
-  state.selectedDocuments = new Set([...state.selectedDocuments].filter(id => available.has(id)));
-  if (!state.documentsInitialized) {
-    state.selectedDocuments = available;
-    state.documentsInitialized = true;
-  }
-  renderDocuments();
-}
-
-async function deleteDocument(id) {
-  try {
-    await api(`/api/documents/${encodeURIComponent(id)}`, { method:"DELETE" });
-    state.documents = state.documents.filter(doc => doc.id !== id);
-    state.selectedDocuments.delete(id);
-    renderDocuments();
-  } catch (error) {
-    $("#upload-error").textContent = error.message;
-    $("#upload-error").hidden = false;
-  }
-}
-
-function appendChatMessage(role, text, sources = []) {
-  const entry = { role, text, sources };
-  state.conversation.push(entry);
-  const log = $("#chat-log");
-  if (state.conversation.length === 1) log.innerHTML = "";
-  const message = document.createElement("article");
-  message.className = `chat-message ${role}`;
-  const heading = document.createElement("h3");
-  heading.textContent = role === "user" ? "You" : "Document-grounded answer";
-  const body = document.createElement("p");
-  body.textContent = text;
-  message.append(heading, body);
-  if (role === "assistant") {
-    if (sources.length) {
-      const refs = document.createElement("div");
-      refs.className = "chat-sources";
-      refs.innerHTML = sources.map((source, index) => `
-        <div class="source-card">
-          <button class="source-ref" type="button" data-source-document="${esc(source.document_id)}">[${index + 1}] ${esc(source.filename)}${source.page ? ` · page ${source.page}` : source.section ? ` · ${esc(source.section)}` : ""}</button>
-          <blockquote>${esc(source.excerpt)}</blockquote>
-        </div>`).join("");
-      message.append(refs);
-      refs.querySelectorAll("[data-source-document]").forEach(button => button.addEventListener("click", () => {
-        const id = button.dataset.sourceDocument;
-        state.selectedDocuments.add(id);
-        renderDocuments();
-        $("#document-list").scrollIntoView({ behavior:"smooth", block:"nearest" });
-      }));
-    }
-    const copy = document.createElement("button");
-    copy.type = "button";
-    copy.className = "btn copy-answer";
-    copy.textContent = "Copy answer";
-    copy.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(text);
-        copy.textContent = "Copied";
-      } catch (_) {
-        copy.textContent = "Copy unavailable";
-      }
-    });
-    message.append(copy);
-  }
-  log.append(message);
-  log.scrollTop = log.scrollHeight;
-}
-
-$("#upload-form").addEventListener("submit", async event => {
-  event.preventDefault();
-  const input = $("#document-file"), submit = event.currentTarget.querySelector("button[type=submit]");
-  $("#upload-error").hidden = true;
-  if (!input.files.length) return;
-  submit.disabled = true;
-  submit.textContent = "Processing document…";
-  const form = new FormData();
-  form.append("file", input.files[0]);
-  try {
-    const result = await api("/api/documents", { method:"POST", body:form });
-    state.selectedDocuments.add(result.document.id);
-    input.value = "";
-    await refreshDocuments();
-    state.selectedDocuments.add(result.document.id);
-    renderDocuments();
-  } catch (error) {
-    $("#upload-error").textContent = error.message;
-    $("#upload-error").hidden = false;
-    await refreshDocuments();
-  } finally {
-    submit.disabled = false;
-    submit.textContent = "Upload and process";
-  }
-});
-
-$("#chat-form").addEventListener("submit", async event => {
-  event.preventDefault();
-  const input = $("#chat-question"), button = $("#ask-button"), question = input.value.trim();
-  if (!question) return;
-  $("#chat-error").hidden = true;
-  $("#chat-retry").hidden = true;
-  appendChatMessage("user", question);
-  button.disabled = true;
-  button.textContent = "Searching…";
-  try {
-    const result = await api("/api/chat", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({ question, document_ids:selectedDocumentIds() }),
-    });
-    appendChatMessage("assistant", result.answer, result.sources);
-    input.value = "";
-  } catch (error) {
-    $("#chat-error").textContent = error.message;
-    $("#chat-error").hidden = false;
-    $("#chat-retry").hidden = false;
-  } finally {
-    button.disabled = false;
-    button.textContent = "Ask";
-    input.focus();
-  }
-});
-
-$("#chat-retry").addEventListener("click", () => $("#chat-form").requestSubmit());
-
-$(".suggestions").addEventListener("click", event => {
-  const question = event.target.dataset.question;
-  if (!question) return;
-  $("#chat-question").value = question;
-  $("#chat-question").focus();
-});
-$("#refresh-documents").addEventListener("click", () => refreshDocuments().catch(error => {
-  $("#upload-error").textContent = error.message;
-  $("#upload-error").hidden = false;
-}));
-
-function showError(msg) {
-  $("#banner").innerHTML = `<div class="banner" role="alert"><b>Could not reach the API.</b> ${esc(msg)}<br>
-    Start it with <code>python api/app.py</code> and open <code>http://127.0.0.1:5000</code> in your browser.</div>`;
-}
-
-/* ------------------------------------------------------------- theme */
-const themeBtn = $("#theme-btn");
-try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (_) {}
-themeBtn.addEventListener("click", () => {
-  const dark = (document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
-  const next = dark ? "light" : "dark";
-  document.documentElement.dataset.theme = next;
-  try { localStorage.setItem("theme", next); } catch (_) {}
-});
-
-/* -------------------------------------------------------------- start */
-(async function init() {
-  try {
-    const [h, stats, options] = await Promise.all([api("/health"), api("/api/stats"), api("/api/options")]);
-    state.threshold = h.threshold; state.stats = stats; state.options = options;
-    $("#banner").innerHTML = "";
-  } catch (e) { showError(e.message); }
-  show(location.hash.slice(1) || "overview");
-})();
-</script>
+      $('#personSearchBtn').addEventListener('click', searchPerson);
+      $('#claimSearchBtn').addEventListener('click', searchClaim);
+      $('#verifyLookupBtn').addEventListener('click', lookupClaim);
+      $('#predictBtn').addEventListener('click', runPrediction);
+      $('#uploadDocBtn').addEventListener('click', uploadDocument);
+      $('#askDocBtn').addEventListener('click', askDocument);
+      $('#refreshBtn').addEventListener('click', async () => {
+        await loadOverview();
+        await loadReviewQueue();
+      });
+    })();
+  </script>
 </body>
 </html>

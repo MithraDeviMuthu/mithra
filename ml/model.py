@@ -1,4 +1,3 @@
-
 import pandas as pd
 from pathlib import Path
 import joblib
@@ -10,9 +9,11 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
-    accuracy_score,
     classification_report,
-    confusion_matrix
+    confusion_matrix,
+    roc_auc_score,
+    average_precision_score,
+    f1_score
 )
 
 # 1. Load the cleaned dataset
@@ -25,13 +26,9 @@ print("Dataset shape:", df.shape)
 # 2. Separate target from input features
 y = df["Is_Fraudulent"]
 
-drop_columns = [
-    "Is_Fraudulent",
-    "Claim_ID",
-    "Patient_ID",
-    "Policy_Number",
-    "Claim_Status"
-]
+# Processing_Days is only known AFTER a claim is handled, so it leaks the label
+drop_columns = ["Is_Fraudulent", "Claim_ID", "Patient_ID", "Policy_Number",
+                "Claim_Status", "Processing_Days"]
 
 X = df.drop(
     columns=[c for c in drop_columns if c in df.columns]
@@ -58,7 +55,7 @@ numeric_columns = X.select_dtypes(
 ).columns.tolist()
 
 categorical_columns = X.select_dtypes(
-    include=["object", "category"]
+    include=["object", "category", "string"]
 ).columns.tolist()
 
 # 5. Prepare missing values and encode text
@@ -87,42 +84,53 @@ model = Pipeline([
     ))
 ])
 
-# 7. Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(
+# 7. Split: 20% test (same split app.py expects), then 20% of the rest for validation
+X_temp, X_test, y_temp, y_test = train_test_split(
     X, y,
     test_size=0.2,
     random_state=42,
     stratify=y
 )
+X_train, X_val, y_train, y_val = train_test_split(
+    X_temp, y_temp,
+    test_size=0.25,
+    random_state=42,
+    stratify=y_temp
+)
 
 print("Training rows:", len(X_train))
+print("Validation rows:", len(X_val))
 print("Testing rows:", len(X_test))
 
 # 8. Train the model
 print("\nTraining model...")
 model.fit(X_train, y_train)
 
-# 9. Evaluate the model on test data
-from sklearn.metrics import roc_auc_score, precision_score, recall_score, f1_score
+# 9. Choose the threshold on VALIDATION data (never on the test set)
+val_proba = model.predict_proba(X_val)[:, 1]
+THRESHOLD = max(
+    [0.5, 0.4, 0.35, 0.3, 0.25, 0.2],
+    key=lambda t: f1_score(y_val, (val_proba >= t).astype(int))
+)
+print("Chosen threshold (validation):", THRESHOLD)
 
+# 10. Evaluate ONCE on the test data
 proba = model.predict_proba(X_test)[:, 1]
-print("ROC-AUC:", round(roc_auc_score(y_test, proba), 3))
+print("Test ROC-AUC:", round(roc_auc_score(y_test, proba), 3))
+print("Test PR-AUC:", round(average_precision_score(y_test, proba), 3))
 
-print("\nThreshold  Precision  Recall  F1")
-for t in [0.5, 0.4, 0.35, 0.3, 0.25, 0.2]:
-    pred = (proba >= t).astype(int)
-    print(f"{t:<10} {precision_score(y_test, pred):<10.2f} "
-          f"{recall_score(y_test, pred):<7.2f} {f1_score(y_test, pred):.2f}")
-
-THRESHOLD = 0.4          # choose from the table above
 predictions = (proba >= THRESHOLD).astype(int)
 print(classification_report(y_test, predictions, zero_division=0))
 print(confusion_matrix(y_test, predictions))
-# 10. Save the trained model
+
+# 11. Save the model together with its threshold
 output_dir = Path("ml")
 output_dir.mkdir(parents=True, exist_ok=True)
 
-joblib.dump(model, output_dir / "health_claims_model.joblib")
+joblib.dump(
+    {"model": model, "threshold": THRESHOLD},
+    output_dir / "health_claims_model.joblib"
+)
 
 print("\nModel saved to ml/health_claims_model.joblib")
 print("Training completed successfully!")
