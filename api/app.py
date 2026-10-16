@@ -69,8 +69,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RAG_DATA_DIR = Path(os.environ.get("RAG_DATA_DIR", PROJECT_ROOT / "data" / "rag"))
 CLAIM_DATA_DIR = Path(os.environ.get("CLAIM_DATA_DIR", PROJECT_ROOT / "data" / "claim_analysis"))
 MODEL_PATH = Path(os.environ.get("MODEL_PATH", PROJECT_ROOT / "ml" / "health_claims_model.joblib"))
-DASHBOARD_DIR = next((d for d in (PROJECT_ROOT / "dashboard", PROJECT_ROOT / "frontend")
-                      if (d / "index.html").exists()), PROJECT_ROOT / "dashboard")
+DASHBOARD_DIR = next((d for d in (PROJECT_ROOT / "frontend-new" / "dist", PROJECT_ROOT / "frontend", PROJECT_ROOT / "dashboard")
+                      if (d / "index.html").exists()), PROJECT_ROOT / "frontend-new" / "dist")
 DATA_CANDIDATES = [
     os.environ.get("DATA_PATH"),
     PROJECT_ROOT / "data" / "processed" / "health_claims_clean.csv",
@@ -191,7 +191,14 @@ app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", ""
 RAG_STORE = RagStore(RAG_DATA_DIR)
 CLAIM_STORE = ClaimDocumentStore(CLAIM_DATA_DIR)
 if CORS:
-    CORS(app)
+    import re
+    CORS(
+        app,
+        supports_credentials=True,
+        origins=[
+            re.compile(r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"),
+        ],
+    )
 
 
 def rag_owner_id():
@@ -508,6 +515,14 @@ def dashboard():
         return jsonify(message="Insurance Analytics API",
                        endpoints=["/health", "/fields", "/predict", "/api/stats"]), 200
     return send_from_directory(DASHBOARD_DIR, "index.html")
+
+
+@app.get("/assets/<path:filename>")
+def serve_assets(filename):
+    assets_dir = DASHBOARD_DIR / "assets"
+    if assets_dir.exists():
+        return send_from_directory(assets_dir, filename)
+    return jsonify(error="Asset not found"), 404
 
 
 @app.get("/health")

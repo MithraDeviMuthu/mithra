@@ -1,124 +1,119 @@
-#**SecureScore: Intelligent verification System**
+# SecureScore: Intelligent Verification System
 
-Fraud-risk scoring and an interactive dashboard for health insurance claims,
-with a local, evidence-citing assistant for policy documents.
+Fraud-risk scoring, claim adjudication, and portfolio analytics for health insurance claims.
 
-## Structure
+## Architecture & Structure
 
-- `ml/`: Random Forest model training and claim feature preparation.
-- `api/app.py`: Flask API, dashboard serving, prediction/analytics routes, and document endpoints.
-- `api/rag.py`: document extraction, chunking, local vectorization, SQLite persistence, and evidence retrieval.
-- `api/test_rag.py`: focused ingestion, retrieval-evaluation, isolation, and API tests.
-- `frontend/index.html`: responsive analytics dashboard and Policy Document Assistant.
-- `data/`: local datasets and runtime document library.
+- `api/app.py`: Flask API server providing fraud scoring, multi-class claim status prediction, portfolio analytics, provider risk tracking, loss ratio analysis, claim extraction, duplicate detection, and anomaly detection.
+- `api/claim_extraction.py`: Automated document extraction (PDF, DOCX, TXT, images) with regex/OCR, field extraction, and adjudication rule validation.
+- `api/duplicate_detection.py`: Exact and near-duplicate claim detection across multi-field similarity thresholds.
+- `api/anomaly_detection.py`: Statistical IQR outlier detection identifying excessive billing charges clustered by provider/service dimensions.
+- `ml/`: Random Forest model training for fraud risk scoring and claim status classification.
+- `frontend-new/`: Web application built with **Vite + React 19 + TypeScript + TailwindCSS + Recharts + Tabler Icons**.
+- `data/`: Local claim datasets and runtime extraction store.
 
-## Run it
+---
 
-Install the dependencies and run the existing model/API as before:
+## Getting Started
 
-```text
+### 1. Backend Setup
+
+Ensure Python 3.10+ is installed:
+
+```bash
 pip install -r requirements.txt
-python ml/model.py       # only if ml/health_claims_model.joblib is not present
+```
+
+Train models if not already generated:
+
+```bash
+python ml/model.py               # Trains health_claims_model.joblib
+python ml/claim_status_model.py  # Trains claim_status_model.joblib
+```
+
+Start the Flask API server:
+
+```bash
 python api/app.py
 ```
 
-Open http://127.0.0.1:5000. The existing `/predict`, `/api/stats`, and other
-analytics endpoints remain available.
+The API will run at `http://127.0.0.1:5000`.
 
-The cleaned claims CSV (`data/processed/health_claims_clean.csv`) and trained
-models are generated locally and are not committed.
+### 2. Frontend Setup (frontend-new)
 
-## Policy Document Assistant
+Navigate to the `frontend-new` directory:
 
-### Architecture and dependencies
-
-The assistant is local and works without a hosted model or API key:
-
-1. PDF files are extracted page-by-page with `pypdf`; TXT files support UTF-8
-   and common numbered/Markdown section headings; DOCX text and heading styles
-   are extracted with `python-docx`.
-2. Text is divided into up-to-1,200-character passages with 200 characters of
-   overlap. PDF page numbers and detected TXT/DOCX section headings are stored
-   as metadata.
-3. Scikit-learn's fixed-dimension `HashingVectorizer` (word unigrams/bigrams)
-   creates normalized sparse vectors. They are persisted with passage text and
-   metadata in SQLite under `data/rag/rag.sqlite3`; uploaded originals are in
-   `data/rag/documents/`. Similarity is cosine similarity, with a configurable
-   minimum score and top-k limit.
-4. Answers are extractive: the assistant selects sentences from retrieved
-   passages, quotes those exact sentences, and maps numbered citations to the
-   returned source excerpts. It declines questions when no passage clears the
-   retrieval threshold. It does not infer missing policy terms.
-
-The local hash-vector approach was chosen to reuse the project's installed
-scikit-learn stack and avoid a heavyweight model download, external document
-transmission, or an API key. It is a lexical retrieval baseline, not a
-transformer embedding model. The project does not configure a generative LLM.
-
-### Configuration
-
-All settings are optional:
-
-- `RAG_DATA_DIR`: change the persistent document/index directory (default:
-  `data/rag`).
-- `RAG_TOP_K`: default maximum number of passages retrieved per query (default
-  `5`, maximum `10`).
-- `RAG_MIN_SCORE`: cosine-similarity cutoff in `[0, 1]` (default `0.08`).
-- `RAG_SESSION_SECRET`: stable secret for signed browser-session isolation.
-  If omitted, a local secret is created in the RAG data directory and reused
-  across restarts. Keep the RAG data directory private.
-- `SESSION_COOKIE_SECURE`: set to `1` when serving over HTTPS, so session
-  cookies are sent only over secure connections.
-
-Uploads accept PDF, TXT, and DOCX up to 20 MB. PDFs are limited to 1,000 pages;
-DOCX files are limited to 50 MB after ZIP expansion. An image-only/scanned PDF
-needs OCR before upload; OCR is not included. TXT files must be UTF-8 encoded.
-
-### API
-
-- `POST /api/documents` — multipart upload field named `file`.
-- `GET /api/documents` — list the current browser session's documents.
-- `GET /api/documents/<id>/status` — processing status and error, if any.
-- `DELETE /api/documents/<id>` — remove the original and its indexed passages.
-- `POST /api/chat` — JSON `{ "question": "...", "document_ids": ["..."] }`.
-  Omit `document_ids` to search all ready documents owned by that session.
-  Optional `top_k` and `min_score` parameters override the defaults.
-
-Chat responses include `answer`, `retrieved_count`, and `sources`; each source
-contains its document ID, filename, page/section, similarity score, and exact
-supporting excerpt.
-
-### Grounding, security, and limitations
-
-Document contents are parsed as text only and are never executed or treated as
-instructions. There is no LLM prompt-injection path in the default extractive
-answerer. Upload filenames are sanitized, server-side names are random IDs,
-uploads are size/type checked, and selected documents are checked against a
-signed browser-session owner scope. The current app has no login or account
-system: this provides browser-session separation for a local single-user
-instance, not production multi-tenant identity or access control. Deployments
-with multiple users need application authentication and HTTPS; set a private,
-stable `RAG_SESSION_SECRET` and restrict access to the server and its data
-directory.
-
-Answers are document information, not official coverage decisions. The
-assistant cannot reliably resolve conflicting policy language or provide a
-paraphrased expert interpretation; inspect the cited source passages and
-escalate conflicts to an authorized reviewer. Conversation history is held
-only in the open page and is not persisted.
-
-### Retrieval evaluation
-
-`api/test_rag.py` includes a deterministic miniature test corpus for coverage
-frequency, claim-submission deadline, exclusions, and an unsupported question.
-The tests assert that each supported question retrieves its expected document
-and excerpt, that a query spanning two documents returns both, and that the
-unsupported question returns no citations. This validates the baseline
-retrieval behavior on the included fixtures; it is not a benchmark of
-production policy documents or a comparison against a reranker/LLM.
-
-Run the focused tests from the project root:
-
-```text
-python -m unittest api.test_rag
+```bash
+cd frontend-new
+npm install
 ```
+
+Start the Vite development server:
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:5173` (or `http://127.0.0.1:5173`) in your browser.
+
+To compile a production bundle:
+
+```bash
+npm run build
+```
+
+When built, the production bundle in `frontend-new/dist` is also served directly by Flask at `http://127.0.0.1:5000/`.
+
+---
+
+## Authentication & Navigation
+
+The frontend includes a secure client-side portal gate at `/`:
+- **Login Landing Screen**: Username & password authentication gate with encrypted session security messaging for authorized personnel.
+- **Top Navigation Bar**: Horizontal top bar displaying "Authorized Agent" with a Sign Out button, linking to all 9 portal sections:
+
+1. **Overview (`/overview`)**:
+   - Executive KPI cards: Total Claims, Fraud Rate, Avg Claim Amount, Flagged by Model (`/api/stats`).
+   - Quick action routing cards to Verify, Insights, and Patterns.
+   - Top high-risk model predictions evaluated on held-out test data (`/api/top-claims`).
+
+2. **Person claim (`/person-claim`)**:
+   - Search patient records or policy numbers (`/api/person-search`).
+   - Displays patient profile, cumulative claims amount, and status breakdown.
+   - History table listing all claims filed by the selected patient (`/api/person-claims`).
+
+3. **Verify (`/verify`)**:
+   - Direct Claim ID lookup (`/api/claim-search`) to automatically load existing claim parameters into the scoring form.
+   - "Fill Sample Claim" button using held-out real claims (`/api/sample-claim`).
+   - Dynamic form built from model schema (`/fields` and `/api/options`).
+   - Real-time scoring with SHAP waterfall feature attributions (`POST /predict?explain=1`).
+   - Mode switcher for multi-class claim status prediction (`POST /predict-status` via `/fields-status`).
+
+4. **Review (`/review`)**:
+   - Ingested claim documents queue (`/api/claim-documents`).
+   - Side-by-side adjudication inspector comparing raw parsed extraction with an editable corrections form (`/api/claim-documents/<id>/review`).
+   - Inline rule validation alerts (math discrepancies, inverted admission/discharge dates).
+
+5. **Insights (`/insights`)**:
+   - Monthly claim volume and fraud rate progression line chart (`/api/analytics`).
+   - Overall loss ratio performance banner (`/api/loss-ratio`).
+   - Loss ratio breakdown tables by Policy Type, Income Bracket, Provider Type, and Network.
+   - Provider fraud rate trend table filterable by Rising, Stable, and Falling (`/api/provider-risk`).
+
+6. **Analytics (`/analytics`)**:
+   - Held-out test set model performance card (Precision, Recall, Flagged count, Decision threshold).
+   - 9 dimensional bar chart breakdowns: Provider Type, Medical Specialty, Service Type, Admission Type, Quarterly Cohort, Patient Age Bracket, Provider-Patient Distance, Claim Amount Bracket, and Number of Procedures (`/api/stats`).
+
+7. **Check a claim (`/check-claim`)**:
+   - Direct claim lookup by ID (`/api/claim-search`) with comprehensive field inspector and "Verify in Model" action.
+   - Operational adjudication queue browser displaying database claims (`/api/review-claims`).
+
+8. **Patterns (`/patterns`)**:
+   - Combined detection suite with sub-navigation tabs:
+     - **Duplicate Detection**: Multi-record comparison matching across exact/near sensitivity sliders (`POST /api/duplicate-claims`).
+     - **Billing Outlier Anomalies**: Statistical IQR outlier detection clustered by Provider Type, Service Type, Admission Type, or Hospital ID (`POST /api/anomaly-detection`).
+
+9. **Claim extraction (`/claim-extraction`)**:
+   - File upload dropzone accepting PDF, DOCX, TXT, PNG, and JPG invoices/bills (`POST /api/claim-documents`).
+   - Ingestion feed showing upload timestamps, file sizes, and parsing status.
+   - Extracted billing entities inspector displaying raw values, source snippets, and regex confidence metrics.

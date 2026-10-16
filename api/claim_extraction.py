@@ -354,25 +354,14 @@ def validate_extracted_claim(payload):
     if service_date and invoice_date and invoice_date < service_date:
         errors.append("Invoice date is earlier than the service date.")
 
-    claim_amount = fields.get("claim_amount")
-    if claim_amount and claim_amount not in {"unavailable"}:
-        currency_match = re.search(r"(\d[\d,]*\.\d{2}|\d[\d,]*)", str(claim_amount).replace("$", ""))
-        if currency_match:
-            try:
-                claim_total = float(currency_match.group(1).replace(",", ""))
-            except ValueError:
-                claim_total = None
-            if claim_total is not None:
-                item_amounts = []
-                for match in re.finditer(r"(?:\$\s*)?(\d{1,3}(?:[.,]\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)", str(payload.get("source_snippets", {}))) :
-                    try:
-                        item_amounts.append(float(match.group(1).replace(",", "")))
-                    except ValueError:
-                        continue
-                if item_amounts:
-                    total_items = sum(item_amounts)
-                    if abs(total_items - claim_total) > 2.0:
-                        errors.append("Line items do not sum to the reported claim total.")
+    # NOTE: a prior "line items do not sum to the reported claim total" check
+    # was removed here. It summed every number found anywhere in
+    # source_snippets (policy/claim/invoice numbers, dates, etc.) and
+    # compared that to claim_amount, which produced false-positive
+    # discrepancy warnings on nearly every real document since no actual
+    # itemized billing section is extracted elsewhere in this module. If
+    # itemized line-item extraction is added later, reintroduce a check
+    # here that parses only that structured section.
 
     return sorted(set(errors))
 

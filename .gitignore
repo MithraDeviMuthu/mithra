@@ -15,3 +15,5 @@ Data-analytics-main/
 data/rag/
 
 ml/claim status model.joblib
+*.joblib
+frontend-new/node_modules/

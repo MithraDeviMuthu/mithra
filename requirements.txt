@@ -10,3 +10,8 @@ pytesseract
 pillow
 pymupdf
 shap
+streamlit
+pandas
+plotly
+matplotlib
+seaborn
