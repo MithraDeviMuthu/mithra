@@ -1,7 +1,7 @@
 """
 Claim Status Prediction Model
 ------------------------------
-A SEPARATE model from the fraud classifier (model.py). This one predicts
+A SEPARATE model from the fraud classifier (fraud_model.py). This one predicts
 how a claim will be processed: "Approved", "Rejected", or "Under Review".
 
 Why this is useful on its own:
@@ -49,7 +49,8 @@ drop_columns = [
     "Claim_Status",
     "Claim_ID",
     "Patient_ID",
-    "Policy_Number"
+    "Policy_Number",
+    "Processing_Days"   # known only after processing -> leaks the label
 ]
 
 X = df.drop(
@@ -61,7 +62,7 @@ date_columns = [
     "Claim_Date",
     "Service_Date",
     "Policy_Expiration_Date",
-    "Policy_Start_Date"
+    "Policy_Start_Date",
 ]
 
 for col in date_columns:

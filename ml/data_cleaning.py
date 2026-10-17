@@ -1,9 +1,8 @@
-
 import pandas as pd
 from pathlib import Path
 
 # 1. Load the health insurance claims dataset
-input_file = Path("data/raw/synthetic_health_claims_enhanced.csv")
+input_file = Path("data/raw/synthetic_health_claims.csv")
 df = pd.read_csv(input_file)
 
 print("Original dataset shape:", df.shape)

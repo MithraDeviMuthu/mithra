@@ -20,6 +20,12 @@ CLAIM_FIELD_NAMES = [
     "discharge_date",
     "service_date",
     "invoice_date",
+    "patient_age",
+    "diagnosis_code",
+    "procedure_code",
+    "provider_type",
+    "admission_type",
+    "length_of_stay",
 ]
 
 
@@ -274,13 +280,45 @@ def extract_claim_fields(text):
             r"total\s*(?:amount|due|charges?)\s*[:#-]?\s*(?:\$\s*)?(\d{1,3}(?:[.,]\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)",
             r"amount\s*due\s*[:#-]?\s*(?:\$\s*)?(\d{1,3}(?:[.,]\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)",
         ],
+        "patient_age": [
+            r"patient\s*age\s*[:#-]?\s*(\d{1,3})",
+            r"\bage\s*[:#-]?\s*(\d{1,3})",
+        ],
+        "diagnosis_code": [
+            r"diagnosis\s*code\s*[:#-]?\s*([A-Za-z0-9.]+)",
+            r"icd\s*(?:-?\d+)?\s*(?:code)?\s*[:#-]?\s*([A-Za-z0-9.]+)",
+        ],
+        "procedure_code": [
+            r"procedure\s*code\s*[:#-]?\s*([A-Za-z0-9.]+)",
+            r"cpt\s*(?:code)?\s*[:#-]?\s*([A-Za-z0-9.]+)",
+        ],
+        "provider_type": [
+            r"provider\s*type\s*[:#-]?\s*([A-Za-z0-9&.'\- ]+?)(?=\s+(?:admission|discharge|service|invoice|claim|policy|patient|diagnosis|procedure|length|bill)\b|$)",
+            r"provider\s*type\s*[:#-]?\s*([A-Za-z0-9&.'\- ]{2,50})",
+        ],
+        "admission_type": [
+            r"admission\s*type\s*[:#-]?\s*([A-Za-z0-9&.'\- ]+?)(?=\s+(?:admission|discharge|service|invoice|claim|policy|patient|diagnosis|procedure|length|provider|bill)\b|$)",
+            r"admission\s*type\s*[:#-]?\s*([A-Za-z0-9&.'\- ]{2,50})",
+        ],
+        "length_of_stay": [
+            r"length\s*of\s*stay\s*(?:days)?\s*[:#-]?\s*(\d+)",
+            r"stay\s*(?:length|duration)\s*(?:days)?\s*[:#-]?\s*(\d+)",
+        ],
     }
+
+    field_labels = [
+        r"admission date", r"discharge date", r"service date",
+        r"invoice number", r"invoice date", r"claim number",
+        r"policy number", r"bill number", r"claim amount",
+        r"patient age", r"diagnosis code", r"procedure code",
+        r"provider type", r"admission type", r"length of stay"
+    ]
 
     for field, pattern_list in patterns.items():
         value, full_match, start, end = _find_value(normalized, pattern_list)
         if value:
-            if field == "provider_name":
-                value = _strip_trailing_label(value, [r"admission date", r"discharge date", r"service date", r"invoice number", r"invoice date", r"claim number", r"policy number", r"bill number", r"claim amount"])
+            if field in ("provider_name", "provider_type", "admission_type"):
+                value = _strip_trailing_label(value, field_labels)
             if _is_valid_extracted_value(field, value):
                 extracted[field] = value
                 snippets[field] = _snippet(normalized, start, end)
@@ -412,10 +450,15 @@ class ClaimDocumentStore:
                     raw_extraction TEXT,
                     corrected_extraction TEXT,
                     validation_errors TEXT,
+                    rag_document_id TEXT,
                     created_at TEXT NOT NULL
                 )
                 """
             )
+            try:
+                connection.execute("ALTER TABLE claim_documents ADD COLUMN rag_document_id TEXT")
+            except Exception:
+                pass
             connection.commit()
         finally:
             connection.close()
@@ -425,10 +468,23 @@ class ClaimDocumentStore:
         connection = self._connect()
         try:
             rows = connection.execute(
-                "SELECT id, filename, status, error, file_size, created_at FROM claim_documents WHERE owner_id=? ORDER BY created_at DESC",
+                "SELECT id, filename, status, error, file_size, created_at, rag_document_id, corrected_extraction, validation_errors FROM claim_documents WHERE owner_id=? ORDER BY created_at DESC",
                 (owner_id,),
             ).fetchall()
-            return [dict(row) for row in rows]
+            items = []
+            for row in rows:
+                item = dict(row)
+                raw_errors = item.get("validation_errors")
+                if raw_errors and isinstance(raw_errors, str):
+                    try:
+                        item["validation_errors"] = json.loads(raw_errors)
+                    except Exception:
+                        item["validation_errors"] = []
+                else:
+                    item["validation_errors"] = raw_errors or []
+                item["has_corrections"] = bool(item.get("corrected_extraction"))
+                items.append(item)
+            return items
         finally:
             connection.close()
             self._open_connections.discard(connection)
@@ -476,12 +532,11 @@ class ClaimDocumentStore:
             raw_extraction = extract_claim_fields(text)
             validation_errors = validate_extracted_claim(raw_extraction)
             raw_payload = json.dumps(raw_extraction)
-            corrected_payload = json.dumps(raw_extraction)
             connection = self._connect()
             try:
                 connection.execute(
-                    "UPDATE claim_documents SET status='ready', raw_extraction=?, corrected_extraction=?, validation_errors=? WHERE id=?",
-                    (raw_payload, corrected_payload, json.dumps(validation_errors), document_id),
+                    "UPDATE claim_documents SET status='ready', raw_extraction=?, corrected_extraction=NULL, validation_errors=? WHERE id=?",
+                    (raw_payload, json.dumps(validation_errors), document_id),
                 )
                 connection.commit()
             finally:

@@ -23,12 +23,20 @@ Endpoints
     GET  /api/documents/<id>/status  document processing status
     DELETE /api/documents/<id>  delete a document and its passages
     POST /api/chat        retrieve and cite evidence from selected documents
+    POST /api/login       start a session (needs APP_USER / APP_PASSWORD env vars)
+    POST /api/logout      end the session
+All routes except /, /health, /assets/* and /api/login require a logged-in session.
 """
+import csv
+from datetime import datetime, timezone
 import json
 import os
 import runpy
 import secrets
+import shutil
 import sys
+import tempfile
+import threading
 import uuid
 from io import StringIO
 from pathlib import Path
@@ -69,8 +77,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RAG_DATA_DIR = Path(os.environ.get("RAG_DATA_DIR", PROJECT_ROOT / "data" / "rag"))
 CLAIM_DATA_DIR = Path(os.environ.get("CLAIM_DATA_DIR", PROJECT_ROOT / "data" / "claim_analysis"))
 MODEL_PATH = Path(os.environ.get("MODEL_PATH", PROJECT_ROOT / "ml" / "health_claims_model.joblib"))
-DASHBOARD_DIR = next((d for d in (PROJECT_ROOT / "frontend-new" / "dist", PROJECT_ROOT / "frontend", PROJECT_ROOT / "dashboard")
-                      if (d / "index.html").exists()), PROJECT_ROOT / "frontend-new" / "dist")
+DASHBOARD_DIR = next((d for d in (PROJECT_ROOT / "frontend" / "dist", PROJECT_ROOT / "dashboard")
+                      if (d / "index.html").exists()), PROJECT_ROOT / "frontend" / "dist")
 DATA_CANDIDATES = [
     os.environ.get("DATA_PATH"),
     PROJECT_ROOT / "data" / "processed" / "health_claims_clean.csv",
@@ -81,7 +89,7 @@ DEFAULT_THRESHOLD = 0.30               # used if the saved model file has no thr
 DATE_COLUMNS = ["Claim_Date", "Service_Date", "Policy_Expiration_Date", "Policy_Start_Date"]
 MAX_BATCH = 1000
 MIN_GROUP = 100                        # hide chart groups with fewer claims than this
-# These two must match the train_test_split() call in your model.py. They let the
+# These two must match the train_test_split() call in your fraud_model.py. They let the
 # dashboard find the claims the model never saw during training.
 TEST_SIZE = 0.2
 RANDOM_STATE = 42
@@ -98,7 +106,7 @@ def train_default_model():
     previous = Path.cwd()
     try:
         os.chdir(PROJECT_ROOT)
-        for script in (PROJECT_ROOT / "ml" / "model.py", PROJECT_ROOT / "ml" / "claim_status_model.py"):
+        for script in (PROJECT_ROOT / "ml" / "fraud_model.py", PROJECT_ROOT / "ml" / "claim_status_model.py"):
             if script.exists() and not script.name.startswith("claim_status") and MODEL_PATH.exists():
                 continue
             if script.exists() and script.name.startswith("claim_status") and STATUS_MODEL_PATH.exists():
@@ -201,6 +209,38 @@ if CORS:
     )
 
 
+APP_USER = os.environ.get("APP_USER", "admin")
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "adminacc")
+OPEN_PATHS = {"/", "/health", "/api/login"}
+
+
+@app.before_request
+def require_login():
+    """Every route except the page itself, /health and /api/login needs a logged-in session."""
+    if request.method == "OPTIONS" or request.path in OPEN_PATHS or request.path.startswith("/assets/"):
+        return None
+    if not session.get("user"):
+        return jsonify(error="Login required"), 401
+    return None
+
+
+@app.post("/api/login")
+def login():
+    data = request.get_json(silent=True) or {}
+    user_ok = secrets.compare_digest(str(data.get("username", "")), APP_USER)
+    pass_ok = secrets.compare_digest(str(data.get("password", "")), APP_PASSWORD)
+    if not (user_ok and pass_ok):
+        return jsonify(error="Invalid username or password."), 401
+    session["user"] = APP_USER
+    return jsonify(ok=True, user=APP_USER)
+
+
+@app.post("/api/logout")
+def logout():
+    session.pop("user", None)
+    return jsonify(ok=True)
+
+
 def rag_owner_id():
     """Give each browser session a separate, signed document-library scope."""
     if "rag_owner_id" not in session:
@@ -267,16 +307,40 @@ def _serialise_claim_row(row):
                 payload[key] = str(pd.to_datetime(payload[key]).date())
             except Exception:
                 pass
+    if "row_id" in row and pd.notna(row["row_id"]):
+        payload["row_id"] = int(row["row_id"])
+    elif hasattr(row, "name") and isinstance(row.name, (int, np.integer)):
+        payload["row_id"] = int(row.name)
+    else:
+        payload["row_id"] = int(payload.get("row_id", 0))
     return payload
 
 
 # ------------------------------------------------------- dashboard data
+DATA_LOCK = threading.Lock()
+DATA_SOURCE_PATH = None
+INITIAL_TEST_INDEX = set()
+
+
 def load_data():
+    global DATA_SOURCE_PATH, INITIAL_TEST_INDEX
     for path in DATA_CANDIDATES:
         if path and Path(path).exists():
-            df = pd.read_csv(path)
+            DATA_SOURCE_PATH = Path(path).resolve()
+            df = pd.read_csv(DATA_SOURCE_PATH)
             df["Is_Fraudulent"] = df["Is_Fraudulent"].astype(int)
             df["Claim_Date"] = pd.to_datetime(df["Claim_Date"], errors="coerce")
+            df["row_id"] = df.index.astype(int)
+            try:
+                _, test_index = train_test_split(
+                    df.index,
+                    test_size=TEST_SIZE,
+                    random_state=RANDOM_STATE,
+                    stratify=df["Is_Fraudulent"]
+                )
+                INITIAL_TEST_INDEX = set(test_index)
+            except Exception:
+                INITIAL_TEST_INDEX = set()
             return df
     return None
 
@@ -299,10 +363,8 @@ def scored_data():
     if "scored" not in _cache:
         df = DATA.copy()
         df["fraud_prob"] = model.predict_proba(prepare(df))[:, 1]
-        # same split as training -> the rows in the test part were never seen by the model
-        _, test_index = train_test_split(df.index, test_size=TEST_SIZE,
-                                         random_state=RANDOM_STATE, stratify=df["Is_Fraudulent"])
-        df["is_test"] = df.index.isin(test_index)
+        # Same split as startup -> appended rows are excluded from the test split
+        df["is_test"] = df.index.isin(INITIAL_TEST_INDEX)
         _cache["scored"] = df
     return _cache["scored"]
 
@@ -389,7 +451,7 @@ def build_provider_risk():
             "periods_observed": len(prows),
         })
 
-    rows.sort(key=lambda r: (-1 if r["trend"] == "Rising" else 0, -r["overall_fraud_rate"]))
+    rows.sort(key=lambda r: -r["overall_fraud_rate"])
     return rows
 
 
@@ -636,14 +698,16 @@ def api_review_claims():
         return missing
     limit = min(max(request.args.get("limit", 200, type=int), 1), 500)
     columns = [
-        "Claim_ID", "Policy_Number", "Claim_Amount", "Claim_Date", "Service_Date",
+        "row_id", "Claim_ID", "Policy_Number", "Claim_Amount", "Claim_Date", "Service_Date",
         "Provider_Type", "Provider_Specialty", "Service_Type", "Hospital_ID",
         "Diagnosis_Code", "Claim_Status",
     ]
-    subset = DATA.loc[:, columns].head(limit).copy()
+    cols = [c for c in columns if c in DATA.columns]
+    subset = DATA.loc[:, cols].head(limit).copy()
     rows = []
-    for row in subset.to_dict(orient="records"):
+    for idx, row in subset.iterrows():
         rows.append({
+            "row_id": int(row.get("row_id", idx)),
             "claim_id": row.get("Claim_ID"),
             "policy_number": row.get("Policy_Number"),
             "claim_amount": float(row["Claim_Amount"]) if pd.notna(row.get("Claim_Amount")) else None,
@@ -657,6 +721,274 @@ def api_review_claims():
             "claim_status": row.get("Claim_Status"),
         })
     return jsonify(claims=rows, count=len(rows))
+
+
+DISALLOWED_EDIT_COLUMNS = {"row_id", "Claim_ID", "Patient_ID"}
+
+
+def _coerce_field_value(field, value):
+    if value is None or (isinstance(value, str) and value.strip() == ""):
+        return None
+    # 1. Dates
+    if field in ("Claim_Date", "Service_Date", "Policy_Expiration_Date", "Policy_Start_Date"):
+        try:
+            ts = pd.to_datetime(value)
+            if pd.isna(ts):
+                raise ValueError(f"Invalid date for {field}: {value}")
+            return ts
+        except Exception as exc:
+            raise ValueError(f"Invalid date format for {field}. Expected YYYY-MM-DD.") from exc
+
+    # 2. Is_Fraudulent
+    if field == "Is_Fraudulent":
+        if isinstance(value, bool):
+            return 1 if value else 0
+        if str(value).strip() in {"1", "true", "True"}:
+            return 1
+        if str(value).strip() in {"0", "false", "False"}:
+            return 0
+        raise ValueError("Is_Fraudulent must be 0 or 1.")
+
+    # 3. Numeric fields
+    int_fields = {
+        "Patient_Age", "Number_of_Procedures", "Length_of_Stay_Days",
+        "Number_of_Previous_Claims_Patient", "Number_of_Previous_Claims_Provider",
+        "Processing_Days"
+    }
+    float_fields = {
+        "Claim_Amount", "Deductible_Amount", "CoPay_Amount",
+        "Provider_Patient_Distance_Miles", "Premium_Amount"
+    }
+    if field in int_fields:
+        try:
+            cleaned = str(value).replace(",", "").replace("$", "").strip()
+            return int(float(cleaned))
+        except Exception as exc:
+            raise ValueError(f"Field {field} must be an integer: {value}") from exc
+    if field in float_fields:
+        try:
+            cleaned = str(value).replace(",", "").replace("$", "").strip()
+            return round(float(cleaned), 2)
+        except Exception as exc:
+            raise ValueError(f"Field {field} must be a number: {value}") from exc
+
+    # 4. Booleans
+    if field in ("Claim_Submitted_Late", "Network_Provider"):
+        if isinstance(value, bool):
+            return value
+        s = str(value).strip().lower()
+        if s in {"true", "1", "yes"}:
+            return True
+        if s in {"false", "0", "no"}:
+            return False
+        return s
+
+    # 5. Strings
+    return str(value).strip()
+
+
+def _sync_dataset_to_csv():
+    global DATA_SOURCE_PATH
+    if DATA_SOURCE_PATH is None:
+        return
+    stem = DATA_SOURCE_PATH.stem
+    ext = DATA_SOURCE_PATH.suffix
+    original_backup = DATA_SOURCE_PATH.parent / f"{stem}.original{ext}"
+    if not original_backup.exists() and DATA_SOURCE_PATH.exists():
+        shutil.copy2(DATA_SOURCE_PATH, original_backup)
+
+    df_to_save = DATA.copy()
+    for col in ("Claim_Date", "Service_Date", "Policy_Expiration_Date", "Policy_Start_Date"):
+        if col in df_to_save.columns:
+            df_to_save[col] = pd.to_datetime(df_to_save[col], errors="coerce").dt.strftime("%Y-%m-%d")
+    if "row_id" in df_to_save.columns:
+        df_to_save = df_to_save.drop(columns=["row_id"])
+    if "_period" in df_to_save.columns:
+        df_to_save = df_to_save.drop(columns=["_period"])
+
+    temp_fd, temp_path = tempfile.mkstemp(
+        dir=DATA_SOURCE_PATH.parent,
+        prefix=f"{stem}_temp_",
+        suffix=ext
+    )
+    os.close(temp_fd)
+    try:
+        df_to_save.to_csv(temp_path, index=False)
+        os.replace(temp_path, DATA_SOURCE_PATH)
+    finally:
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+
+def _append_edit_log(row_id, field, old_val, new_val):
+    log_path = PROJECT_ROOT / "data" / "processed" / "claim_edits_log.csv"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    file_exists = log_path.exists()
+    now_str = datetime.now(timezone.utc).isoformat()
+    current_user = session.get("user", "admin")
+    with open(log_path, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(["time", "user", "row_id", "field", "old", "new"])
+        writer.writerow([now_str, current_user, row_id, field, str(old_val), str(new_val)])
+
+
+@app.patch("/api/claims/<int:row_id>")
+def patch_claim(row_id):
+    missing = need_data()
+    if missing:
+        return missing
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or not payload:
+        return jsonify(error="Expected JSON object of fields to update."), 400
+
+    with DATA_LOCK:
+        if row_id not in DATA.index:
+            return jsonify(error=f"Claim row {row_id} not found."), 404
+
+        dataset_cols = set(DATA.columns) - {"_period", "row_id"}
+        for k in payload.keys():
+            if k in DISALLOWED_EDIT_COLUMNS:
+                return jsonify(error=f"Cannot edit identifier column: {k}"), 400
+            if k not in dataset_cols:
+                return jsonify(error=f"Unknown dataset column: {k}"), 400
+
+        coerced_updates = {}
+        for k, v in payload.items():
+            try:
+                coerced_updates[k] = _coerce_field_value(k, v)
+            except ValueError as ve:
+                return jsonify(error=str(ve)), 400
+
+        for k, v in coerced_updates.items():
+            old_val = DATA.at[row_id, k]
+            DATA.at[row_id, k] = v
+            _append_edit_log(row_id, k, old_val, v)
+
+        _cache.clear()
+        _sync_dataset_to_csv()
+        claim_data = _serialise_claim_row(DATA.loc[row_id])
+
+    return jsonify(
+        ok=True,
+        row_id=row_id,
+        claim=claim_data,
+        retrain_needed=True,
+        message=f"Saved to dataset (row {row_id}). Retrain to update predictions."
+    ), 200
+
+
+@app.post("/api/claims")
+def post_claim():
+    global DATA
+    missing = need_data()
+    if missing:
+        return missing
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or not payload:
+        return jsonify(error="Expected JSON object of claim data."), 400
+
+    with DATA_LOCK:
+        dataset_cols = set(DATA.columns) - {"_period", "row_id"}
+        for k in payload.keys():
+            if k not in dataset_cols and k not in {"Claim_ID", "Patient_ID"}:
+                return jsonify(error=f"Unknown dataset column: {k}"), 400
+
+        new_row = {}
+        for col in dataset_cols:
+            if col in payload:
+                try:
+                    new_row[col] = _coerce_field_value(col, payload[col])
+                except ValueError as ve:
+                    return jsonify(error=str(ve)), 400
+            else:
+                new_row[col] = None
+
+        if "Claim_ID" in payload and payload["Claim_ID"]:
+            new_row["Claim_ID"] = payload["Claim_ID"]
+        else:
+            try:
+                max_id = pd.to_numeric(DATA["Claim_ID"], errors="coerce").dropna().max()
+                new_row["Claim_ID"] = int(max_id + 1)
+            except Exception:
+                new_row["Claim_ID"] = len(DATA) + 1
+
+        if "Patient_ID" in payload and payload["Patient_ID"]:
+            new_row["Patient_ID"] = payload["Patient_ID"]
+        else:
+            try:
+                max_pid = pd.to_numeric(DATA["Patient_ID"], errors="coerce").dropna().max()
+                new_row["Patient_ID"] = int(max_pid + 1)
+            except Exception:
+                new_row["Patient_ID"] = 99999
+
+        new_row_id = int(len(DATA))
+        new_row["row_id"] = new_row_id
+
+        new_df = pd.DataFrame([new_row], index=[new_row_id])
+        DATA = pd.concat([DATA, new_df])
+
+        for k, v in new_row.items():
+            if k not in {"row_id"}:
+                _append_edit_log(new_row_id, k, None, v)
+
+        _cache.clear()
+        _sync_dataset_to_csv()
+        claim_data = _serialise_claim_row(DATA.loc[new_row_id])
+
+    return jsonify(
+        ok=True,
+        row_id=new_row_id,
+        claim=claim_data,
+        retrain_needed=True,
+        message=f"Added claim to dataset (row {new_row_id}). Retrain to update predictions."
+    ), 201
+
+
+@app.get("/api/claims/match")
+def match_claims():
+    missing = need_data()
+    if missing:
+        return missing
+    policy_number = request.args.get("policy_number", "").strip()
+    claim_amount = request.args.get("claim_amount", "").strip()
+    service_date = request.args.get("service_date", "").strip()
+
+    if not policy_number:
+        return jsonify(matches=[], count=0)
+
+    mask = DATA["Policy_Number"].astype(str).str.lower() == policy_number.lower()
+    matches = DATA.loc[mask].copy()
+
+    if matches.empty:
+        return jsonify(matches=[], count=0)
+
+    sub_mask = pd.Series(False, index=matches.index)
+    has_sub = False
+    if claim_amount:
+        try:
+            amt = float(str(claim_amount).replace(",", "").replace("$", ""))
+            sub_mask |= (matches["Claim_Amount"] - amt).abs() < 0.01
+            has_sub = True
+        except Exception:
+            pass
+    if service_date:
+        try:
+            s_date = pd.to_datetime(service_date).date()
+            dates = pd.to_datetime(matches["Service_Date"], errors="coerce").dt.date
+            sub_mask |= (dates == s_date)
+            has_sub = True
+        except Exception:
+            pass
+
+    if has_sub and sub_mask.any():
+        matches = matches.loc[sub_mask]
+
+    res = [_serialise_claim_row(row) for _, row in matches.iterrows()]
+    return jsonify(matches=res, count=len(res))
 
 
 @app.get("/api/claim-documents")
@@ -674,6 +1006,24 @@ def upload_claim_document():
         document = CLAIM_STORE.upload_document(rag_owner_id(), upload.filename, content, upload.mimetype or "application/octet-stream")
     except ClaimExtractionError as exc:
         return jsonify(error=str(exc)), 422
+
+    rag_document_id = None
+    try:
+        rag_doc = RAG_STORE.add_document(rag_owner_id(), upload.filename, content)
+        rag_document_id = rag_doc.get("id")
+    except DocumentError:
+        rag_document_id = None
+
+    if rag_document_id:
+        conn = CLAIM_STORE._connect()
+        try:
+            conn.execute("UPDATE claim_documents SET rag_document_id=? WHERE id=?", (rag_document_id, document["id"]))
+            conn.commit()
+        finally:
+            conn.close()
+            CLAIM_STORE._open_connections.discard(conn)
+
+    document["rag_document_id"] = rag_document_id
     return jsonify(claim_document=document), 201
 
 
@@ -688,6 +1038,11 @@ def get_claim_document(document_id):
         document["corrected_extraction"] = json.loads(document["corrected_extraction"])
     if document.get("validation_errors"):
         document["validation_errors"] = json.loads(document["validation_errors"])
+    if not document.get("rag_document_id"):
+        for rd in RAG_STORE.list_documents(rag_owner_id()):
+            if rd.get("filename") == document.get("filename") and rd.get("status") == "ready":
+                document["rag_document_id"] = rd["id"]
+                break
     return jsonify(claim_document=document)
 
 
@@ -919,14 +1274,37 @@ def api_provider_risk():
         return missing
     if "provider_risk" not in _cache:
         _cache["provider_risk"] = build_provider_risk()
-    rows = _cache["provider_risk"]
+    all_rows = _cache["provider_risk"]
+
+    trend_counts = {
+        "Rising": 0,
+        "Stable": 0,
+        "Falling": 0,
+        "Not enough history": 0,
+    }
+    for r in all_rows:
+        t = r.get("trend")
+        if t in trend_counts:
+            trend_counts[t] += 1
 
     trend_filter = request.args.get("trend")  # e.g. ?trend=Rising
-    if trend_filter:
+    rows = list(all_rows)
+    if trend_filter and trend_filter.lower() != "all":
         rows = [r for r in rows if r["trend"].lower() == trend_filter.lower()]
+        if trend_filter.lower() == "rising":
+            rows.sort(key=lambda r: -r["trend_delta"])
+        elif trend_filter.lower() == "falling":
+            rows.sort(key=lambda r: r["trend_delta"])
+    else:
+        rows.sort(key=lambda r: -r["overall_fraud_rate"])
 
-    limit = min(max(request.args.get("limit", 50, type=int), 1), 500)
-    return jsonify(count=len(rows[:limit]), total_providers=len(rows), providers=rows[:limit])
+    limit = min(max(request.args.get("limit", 100, type=int), 1), 500)
+    return jsonify(
+        count=len(rows[:limit]),
+        total_providers=len(rows),
+        trend_counts=trend_counts,
+        providers=rows[:limit]
+    )
 
 
 @app.get("/api/loss-ratio")

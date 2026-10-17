@@ -7,8 +7,9 @@ import unittest
 from docx import Document
 from pypdf import PdfWriter
 
-from api.app import app
+from api import app as app_module
 from api.claim_extraction import ClaimDocumentStore, ClaimExtractionError
+from api.rag import RagStore
 
 try:
     import fitz  # noqa: F401
@@ -31,14 +32,34 @@ def _claim_image_bytes(fmt="PNG"):
 
 
 class ClaimExtractionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.orig_rag_store = app_module.RAG_STORE
+        cls.orig_claim_store = app_module.CLAIM_STORE
+
+    @classmethod
+    def tearDownClass(cls):
+        app_module.RAG_STORE = cls.orig_rag_store
+        app_module.CLAIM_STORE = cls.orig_claim_store
+
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.store = ClaimDocumentStore(self.temp_dir.name)
-        app.config["TESTING"] = True
-        app.config["SECRET_KEY"] = "test-secret"
-        self.client = app.test_client()
+        app_module.CLAIM_STORE = self.store
+        app_module.RAG_STORE = RagStore(self.temp_dir.name)
+        app_module.app.config["TESTING"] = True
+        app_module.app.config["SECRET_KEY"] = "test-secret"
+        self.client = app_module.app.test_client()
+        with self.client.session_transaction() as sess:
+            sess["user"] = "admin"          # routes now require a logged-in session
 
     def tearDown(self):
+        try:
+            self.store.close()
+        except Exception:
+            pass
+        app_module.RAG_STORE = self.orig_rag_store
+        app_module.CLAIM_STORE = self.orig_claim_store
         self.temp_dir.cleanup()
 
     def _pdf_bytes(self, text):
@@ -75,6 +96,21 @@ class ClaimExtractionTests(unittest.TestCase):
         self.assertEqual(raw["fields"]["claim_amount"], "$1,245.50")
         self.assertIn("POL-8841", raw["source_snippets"]["policy_number"])
         self.assertIn("unavailable", raw["fields"]["discharge_date"])
+
+    def test_txt_extracts_new_scoring_fields(self):
+        doc = self.store.upload_document(
+            "owner-a",
+            "clinical_claim.txt",
+            b"Policy Number: POL-1234\nClaim Number: CLM-9876\nPatient Age: 45\nDiagnosis Code: E11.9\nProcedure Code: 99213\nProvider Type: Clinic\nAdmission Type: Outpatient\nLength of Stay: 3\nClaim Amount: $750.00\n",
+        )
+        self.assertEqual(doc["status"], "ready")
+        raw = json.loads(doc["raw_extraction"])["fields"]
+        self.assertEqual(raw["patient_age"], "45")
+        self.assertEqual(raw["diagnosis_code"], "E11.9")
+        self.assertEqual(raw["procedure_code"], "99213")
+        self.assertEqual(raw["provider_type"], "Clinic")
+        self.assertEqual(raw["admission_type"], "Outpatient")
+        self.assertEqual(raw["length_of_stay"], "3")
 
     def test_pdf_upload_and_review_update_preserve_raw_values(self):
         document = self.store.upload_document(
@@ -161,6 +197,26 @@ class ClaimExtractionTests(unittest.TestCase):
         self.assertEqual(review.status_code, 200)
         corrected = review.get_json()["claim_document"]["corrected_extraction"]["fields"]["claim_amount"]
         self.assertEqual(corrected, "$2,250.00")
+
+    def test_api_upload_claim_document_with_rag_summary(self):
+        file_bytes = b"Policy Number: POL-55\nClaim Number: CLM-55\nProvider Name: Sunrise Hospital\nInvoice Number: INV-55\nClaim Amount: $2,000.00\nService Date: 2024-01-09\nTreatment: Physical therapy follow up and consultation."
+        response = self.client.post(
+            "/api/claim-documents",
+            data={"file": (io.BytesIO(file_bytes), "claim_rag.txt")},
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(response.status_code, 201)
+        doc = response.get_json()["claim_document"]
+        rag_doc_id = doc.get("rag_document_id")
+        self.assertIsNotNone(rag_doc_id)
+
+        chat_res = self.client.post("/api/chat", json={
+            "question": "Summarize this document",
+            "document_ids": [rag_doc_id],
+        })
+        self.assertEqual(chat_res.status_code, 200)
+        answer = chat_res.get_json().get("answer", "")
+        self.assertTrue(len(answer) > 0)
 
 
 if __name__ == "__main__":

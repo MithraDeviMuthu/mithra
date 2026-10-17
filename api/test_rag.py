@@ -194,6 +194,8 @@ class RagApiTests(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.app_module.RAG_STORE = RagStore(self.temp_dir.name)
         self.client = self.app_module.app.test_client()
+        with self.client.session_transaction() as sess:
+            sess["user"] = "admin"          # routes now require a logged-in session
 
     def tearDown(self):
         self.temp_dir.cleanup()
@@ -220,6 +222,8 @@ class RagApiTests(unittest.TestCase):
         )
 
         other_client = self.app_module.app.test_client()
+        with other_client.session_transaction() as sess:
+            sess["user"] = "admin"
         self.assertEqual(other_client.get("/api/documents").get_json()["documents"], [])
         self.assertEqual(other_client.delete(f"/api/documents/{document['id']}").status_code, 404)
         self.assertEqual(self.client.delete(f"/api/documents/{document['id']}").status_code, 200)

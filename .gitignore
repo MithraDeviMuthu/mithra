@@ -5,15 +5,11 @@ venv/
 .env
 .DS_Store
 *.log
-venv/
 .pytest_cache/
-Insurance-Policy-/
 .vscode/
-Data-analytics-main/
-*.joblib
-*(1).csv
 data/rag/
-
-ml/claim status model.joblib
+data/claim_analysis/
+frontend/dist/
+frontend/node_modules/
+ml/*.joblib
 *.joblib
-frontend-new/node_modules/
