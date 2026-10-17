@@ -5,8 +5,12 @@ import {
   IconAlertTriangle,
   IconArrowRight,
   IconRefresh,
+  IconEdit,
+  IconCheck,
+  IconX,
+  IconDeviceFloppy,
 } from "@tabler/icons-react";
-import { searchClaim, getReviewClaims, predictClaim } from "../api";
+import { searchClaim, getReviewClaims, predictClaim, updateClaim } from "../api";
 import type { ReviewClaimItem } from "../api/types";
 import { StatusBadge } from "../components/StatusBadge";
 import { Loading } from "../components/Loading";
@@ -24,6 +28,13 @@ export const CheckClaim: React.FC = () => {
     fraud_probability: number;
     risk_level: "High" | "Medium" | "Low";
   } | null>(null);
+
+  // Edit claim in dataset
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
+  const [savingEdit, setSavingEdit] = useState<boolean>(false);
+  const [editToast, setEditToast] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Operational Database Queue
   const [queueClaims, setQueueClaims] = useState<ReviewClaimItem[]>([]);
@@ -91,6 +102,63 @@ export const CheckClaim: React.FC = () => {
     }
   };
 
+  const handleStartEdit = () => {
+    if (!activeClaim) return;
+    const initial: Record<string, string> = {};
+    Object.entries(activeClaim).forEach(([k, v]) => {
+      initial[k] = v !== null && v !== undefined ? String(v) : "";
+    });
+    setEditForm(initial);
+    setIsEditing(true);
+    setEditToast(null);
+    setEditError(null);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditForm({});
+    setEditError(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!activeClaim || activeClaim.row_id === undefined) return;
+    setSavingEdit(true);
+    setEditError(null);
+
+    const rowId = Number(activeClaim.row_id);
+    const changedFields: Record<string, unknown> = {};
+
+    Object.entries(editForm).forEach(([k, val]) => {
+      if (k === "row_id" || k === "Claim_ID" || k === "Patient_ID") return;
+      const originalVal = activeClaim[k];
+      const origStr = originalVal !== null && originalVal !== undefined ? String(originalVal) : "";
+      if (val !== origStr) {
+        changedFields[k] = val;
+      }
+    });
+
+    if (Object.keys(changedFields).length === 0) {
+      setIsEditing(false);
+      setSavingEdit(false);
+      return;
+    }
+
+    try {
+      const res = await updateClaim(rowId, changedFields);
+      setEditToast(`Saved to dataset (row ${rowId}). Retrain to update predictions.`);
+      setIsEditing(false);
+      await handleLookup(String(activeClaim.Claim_ID));
+      void fetchQueue();
+      window.dispatchEvent(
+        new CustomEvent("claimSaved", { detail: { rowId, response: res } })
+      );
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Failed to update claim");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     handleLookup(claimIdInput);
@@ -147,7 +215,14 @@ export const CheckClaim: React.FC = () => {
       </div>
 
       {tab === "new" ? (
-        <ClaimScoreForm mode="both" showClaimSummary={true} />
+        <ClaimScoreForm
+          mode="both"
+          showClaimSummary={true}
+          showSaveButton={true}
+          onSaved={() => {
+            void fetchQueue();
+          }}
+        />
       ) : (
         <>
           {/* Direct Claim ID Lookup Card */}
@@ -230,22 +305,91 @@ export const CheckClaim: React.FC = () => {
                     >
                       Verify in Model <IconArrowRight size={13} />
                     </Link>
+
+                    {!isEditing ? (
+                      <button
+                        type="button"
+                        onClick={handleStartEdit}
+                        className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-md bg-accent text-bg-page hover:bg-accent/90 transition-colors"
+                      >
+                        <IconEdit size={13} />
+                        Edit Claim
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSaveEdit}
+                          disabled={savingEdit}
+                          className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-md bg-accent text-bg-page hover:bg-accent/90 transition-colors disabled:opacity-50"
+                        >
+                          <IconDeviceFloppy size={13} />
+                          {savingEdit ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          disabled={savingEdit}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-border text-text-muted hover:text-text-primary transition-colors"
+                        >
+                          <IconX size={13} />
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                  {Object.entries(activeClaim).map(([key, val]) => (
-                    <div key={key} className="p-2.5 rounded bg-bg-card border border-border">
-                      <span className="text-[10px] font-medium text-text-muted uppercase block truncate">
-                        {key.replace(/_/g, " ")}
-                      </span>
-                      <span className="font-medium text-text-primary mt-0.5 block truncate">
-                        {val !== null && val !== undefined && val !== ""
-                          ? String(val)
-                          : "N/A"}
-                      </span>
+                {editToast && (
+                  <div className="p-3 rounded-lg bg-success-bg/60 border border-success/40 text-success-text text-xs flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <IconCheck size={16} />
+                      <span>{editToast}</span>
                     </div>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={() => setEditToast(null)}
+                      className="text-xs font-semibold hover:underline"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                )}
+
+                {editError && (
+                  <div className="p-3 rounded-lg bg-danger-bg/60 border border-danger/40 text-danger-text text-xs flex items-center gap-2">
+                    <IconAlertTriangle size={16} />
+                    <span>{editError}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  {Object.entries(activeClaim).map(([key, val]) => {
+                    const isReadOnlyKey = key === "row_id" || key === "Claim_ID" || key === "Patient_ID";
+                    return (
+                      <div key={key} className="p-2.5 rounded bg-bg-card border border-border">
+                        <span className="text-[10px] font-medium text-text-muted uppercase block truncate">
+                          {key.replace(/_/g, " ")} {isReadOnlyKey && isEditing && "(locked)"}
+                        </span>
+                        {isEditing && !isReadOnlyKey ? (
+                          <input
+                            type="text"
+                            value={editForm[key] ?? ""}
+                            onChange={(e) =>
+                              setEditForm((prev) => ({ ...prev, [key]: e.target.value }))
+                            }
+                            className="w-full mt-1 px-2 py-1 text-xs rounded bg-bg-card-alt border border-border text-text-primary focus:border-accent focus:outline-none"
+                          />
+                        ) : (
+                          <span className="font-medium text-text-primary mt-0.5 block truncate">
+                            {val !== null && val !== undefined && val !== ""
+                              ? String(val)
+                              : "N/A"}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ) : null}

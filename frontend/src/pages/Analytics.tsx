@@ -6,21 +6,23 @@ import {
   IconShieldCheck,
 } from "@tabler/icons-react";
 import { getStats } from "../api";
-import type { StatsResponse } from "../api/types";
+import type { StatsResponse, FilterParams } from "../api";
 import { Loading } from "../components/Loading";
 import { ErrorState } from "../components/ErrorState";
 import { BarChart } from "../components/charts/BarChart";
+import { DashboardFilters } from "../components/DashboardFilters";
 
 export const Analytics: React.FC = () => {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<FilterParams>({});
 
-  const loadData = async () => {
+  const loadData = async (activeFilters: FilterParams = filters, timestamp?: number) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await getStats();
+      const res = await getStats(activeFilters, timestamp);
       setStats(res);
     } catch (err) {
       setError(
@@ -32,8 +34,17 @@ export const Analytics: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    void loadData(filters);
+
+    const handleClaimSaved = () => {
+      // Force fresh cache-busted fetch
+      void loadData(filters, Date.now());
+    };
+    window.addEventListener("claimSaved", handleClaimSaved);
+    return () => {
+      window.removeEventListener("claimSaved", handleClaimSaved);
+    };
+  }, [filters]);
 
   if (loading) {
     return (
@@ -68,6 +79,15 @@ export const Analytics: React.FC = () => {
           Multi-dimensional fraud rate distributions across clinical providers, patient demographics, and held-out model accuracy.
         </p>
       </div>
+
+      {/* Interactive Range Filters */}
+      <DashboardFilters
+        initialFilters={filters}
+        onFilterChange={(newFilters) => {
+          setFilters(newFilters);
+          void loadData(newFilters, Date.now());
+        }}
+      />
 
       {/* Held-Out Test Evaluation Card */}
       <div className="card p-6">

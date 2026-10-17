@@ -9,33 +9,45 @@ import type {
   AnalyticsResponse,
   LossRatioResponse,
   ProviderRiskResponse,
-} from "../api/types";
+  FilterParams,
+} from "../api";
 import { StatusBadge } from "../components/StatusBadge";
 import { Loading } from "../components/Loading";
 import { ErrorState } from "../components/ErrorState";
 import { LineChart } from "../components/charts/LineChart";
+import { DashboardFilters } from "../components/DashboardFilters";
 
 export const Insights: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
   const [lossRatio, setLossRatio] = useState<LossRatioResponse | null>(null);
   const [providerRisk, setProviderRisk] = useState<ProviderRiskResponse | null>(null);
+  const [filters, setFilters] = useState<FilterParams>({});
 
   const [trendFilter, setTrendFilter] = useState<string>("All");
+  const [providerLimit, setProviderLimit] = useState<number>(100);
   const [lossRatioSegment, setLossRatioSegment] = useState<
     "by_policy_type" | "by_income_bracket" | "by_provider_type" | "by_network"
   >("by_policy_type");
 
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (activeFilters: FilterParams = filters, timestamp?: number) => {
     setLoading(true);
     setError(null);
     try {
       const [aRes, lRes, pRes] = await Promise.all([
-        getAnalytics(),
-        getLossRatio(),
-        getProviderRisk(),
+        getAnalytics(activeFilters, timestamp),
+        getLossRatio(activeFilters, timestamp),
+        getProviderRisk(
+          {
+            limit: providerLimit,
+            ...(trendFilter === "All" ? {} : { trend: trendFilter }),
+            ...activeFilters,
+          },
+          timestamp
+        ),
       ]);
       setAnalytics(aRes);
       setLossRatio(lRes);
@@ -50,18 +62,54 @@ export const Insights: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    void loadData(filters);
+
+    const handleClaimSaved = () => {
+      // Force fresh cache-busted fetch
+      void loadData(filters, Date.now());
+    };
+    window.addEventListener("claimSaved", handleClaimSaved);
+    return () => {
+      window.removeEventListener("claimSaved", handleClaimSaved);
+    };
+  }, [filters, providerLimit, trendFilter]);
 
   const handleTrendFilterChange = async (trend: string) => {
     setTrendFilter(trend);
     try {
-      const pRes = await getProviderRisk({
-        trend: trend === "All" ? undefined : trend,
-      });
+      const pRes = await getProviderRisk(
+        {
+          trend: trend === "All" ? undefined : trend,
+          limit: providerLimit,
+          ...filters,
+        },
+        Date.now()
+      );
       setProviderRisk(pRes);
     } catch (err) {
       console.error("Failed to filter provider risk:", err);
+    }
+  };
+
+  const handleShowMore = async () => {
+    if (providerLimit >= 500) return;
+    const nextLimit = Math.min(providerLimit + 100, 500);
+    setProviderLimit(nextLimit);
+    setLoadingMore(true);
+    try {
+      const pRes = await getProviderRisk(
+        {
+          trend: trendFilter === "All" ? undefined : trendFilter,
+          limit: nextLimit,
+          ...filters,
+        },
+        Date.now()
+      );
+      setProviderRisk(pRes);
+    } catch (err) {
+      console.error("Failed to load more providers:", err);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -96,6 +144,15 @@ export const Insights: React.FC = () => {
           Longitudinal portfolio volume, underwriting premium loss ratios, and facility fraud trajectory tracking.
         </p>
       </div>
+
+      {/* Interactive Range Filters */}
+      <DashboardFilters
+        initialFilters={filters}
+        onFilterChange={(newFilters) => {
+          setFilters(newFilters);
+          void loadData(newFilters, Date.now());
+        }}
+      />
 
       {/* Monthly Claims Volume & Fraud Rate Trend Chart */}
       <LineChart
@@ -289,19 +346,30 @@ export const Insights: React.FC = () => {
           </div>
 
           {/* Trend Filters */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-text-muted mr-1">Filter Trajectory:</span>
-            {["All", "Rising", "Stable", "Falling"].map((trend) => (
+            {[
+              { id: "All", label: "All", count: providerRisk.total_providers },
+              { id: "Rising", label: "Rising", count: providerRisk.trend_counts?.Rising ?? 0 },
+              { id: "Stable", label: "Stable", count: providerRisk.trend_counts?.Stable ?? 0 },
+              { id: "Falling", label: "Falling", count: providerRisk.trend_counts?.Falling ?? 0 },
+              {
+                id: "Not enough history",
+                label: "Not enough history",
+                count: providerRisk.trend_counts?.["Not enough history"] ?? 0,
+              },
+            ].map((trend) => (
               <button
-                key={trend}
-                onClick={() => handleTrendFilterChange(trend)}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors border ${
-                  trendFilter === trend
+                key={trend.id}
+                onClick={() => handleTrendFilterChange(trend.id)}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors border flex items-center gap-1.5 ${
+                  trendFilter === trend.id
                     ? "bg-accent/20 text-accent border-accent/40 font-semibold"
                     : "bg-bg-card-alt text-text-secondary border-border hover:text-text-primary"
                 }`}
               >
-                {trend}
+                <span>{trend.label}</span>
+                <span className="text-[10px] opacity-75 font-mono">({trend.count})</span>
               </button>
             ))}
           </div>
@@ -366,6 +434,23 @@ export const Insights: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Show More Pagination */}
+        {providerRisk.providers.length < providerRisk.total_providers && providerLimit < 500 && (
+          <div className="flex items-center justify-between pt-4 border-t border-border mt-4">
+            <span className="text-xs text-text-muted">
+              Showing {providerRisk.providers.length} of {providerRisk.total_providers} facilities
+            </span>
+            <button
+              type="button"
+              onClick={handleShowMore}
+              disabled={loadingMore}
+              className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-bg-card-alt border border-border text-text-primary hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
+            >
+              {loadingMore ? "Loading..." : "Show more (+100)"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

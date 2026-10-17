@@ -8,6 +8,12 @@ import {
   IconAlertCircle,
   IconCheck,
   IconFileText,
+  IconDeviceFloppy,
+  IconSparkles,
+  IconSearch,
+  IconX,
+  IconArrowBackUp,
+  IconRotate,
 } from "@tabler/icons-react";
 import {
   getFields,
@@ -15,6 +21,10 @@ import {
   getOptions,
   predictClaim,
   predictStatus,
+  createClaim,
+  searchClaim,
+  getPersonClaims,
+  matchClaims,
 } from "../api";
 import type {
   FieldsResponse,
@@ -22,10 +32,26 @@ import type {
   OptionsResponse,
   PredictResult,
   PredictStatusResult,
+  ClaimMutationResponse,
 } from "../api/types";
 import { StatusBadge } from "./StatusBadge";
 import { Loading } from "./Loading";
 import { ErrorState } from "./ErrorState";
+
+export const REQUIRED_FIELDS = new Set([
+  "Claim_Amount",
+  "Claim_Date",
+  "Service_Date",
+  "Patient_Age",
+  "Patient_Gender",
+  "Hospital_ID",
+  "Provider_Type",
+  "Service_Type",
+  "Diagnosis_Code",
+  "Procedure_Code",
+  "Admission_Type",
+  "Length_of_Stay_Days",
+]);
 
 export interface ClaimScoreFormProps {
   initialValues?: Record<string, string | number>;
@@ -38,10 +64,12 @@ export interface ClaimScoreFormProps {
   mode?: "fraud" | "status" | "both";
   allowModeSwitch?: boolean;
   showClaimSummary?: boolean;
+  showSaveButton?: boolean;
   onScored?: (
     fraudResult: PredictResult | null,
     statusResult: PredictStatusResult | null
   ) => void;
+  onSaved?: (savedClaim: ClaimMutationResponse) => void;
   formTitle?: string;
   formSubtitle?: string;
 }
@@ -52,7 +80,9 @@ export const ClaimScoreForm: React.FC<ClaimScoreFormProps> = ({
   mode: initialMode = "both",
   allowModeSwitch = false,
   showClaimSummary = false,
+  showSaveButton = true,
   onScored,
+  onSaved,
   formTitle,
   formSubtitle,
 }) => {
@@ -77,10 +107,25 @@ export const ClaimScoreForm: React.FC<ClaimScoreFormProps> = ({
     initialOptionalLabels?.policyNumber || ""
   );
 
+  const [autoFillLoading, setAutoFillLoading] = useState<"claim" | "patient" | "policy" | null>(null);
+  const [autoFillNotice, setAutoFillNotice] = useState<{
+    type: "success" | "warning";
+    message: string;
+  } | null>(null);
+  const [previousFormData, setPreviousFormData] = useState<Record<string, string | number> | null>(null);
+
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [scoring, setScoring] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
   const [scoreError, setScoreError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveConfirmation, setSaveConfirmation] = useState<{
+    claimId: string | number;
+    rawId: string | number;
+    message: string;
+    prediction?: ClaimMutationResponse["prediction"];
+  } | null>(null);
 
   const [fraudResult, setFraudResult] = useState<PredictResult | null>(null);
   const [statusResult, setStatusResult] = useState<PredictStatusResult | null>(
@@ -136,6 +181,161 @@ export const ClaimScoreForm: React.FC<ClaimScoreFormProps> = ({
     }));
   };
 
+  const handleAutoFillClaim = async (overrideId?: string) => {
+    const cid = (overrideId !== undefined ? overrideId : optionalClaimId).trim();
+    if (!cid) return;
+    setAutoFillLoading("claim");
+    setAutoFillNotice(null);
+    try {
+      const res = await searchClaim(cid);
+      if (res.claim) {
+        setPreviousFormData({ ...formData });
+        const c = res.claim;
+        const next: Record<string, string | number> = { ...formData };
+        for (const [k, v] of Object.entries(c)) {
+          if (v !== null && v !== undefined && k !== "row_id" && k !== "Is_Fraudulent") {
+            if (typeof v === "string" && v.includes("T00:00:00")) {
+              next[k] = v.split("T")[0] || v;
+            } else {
+              next[k] = String(v);
+            }
+          }
+        }
+        setFormData(next);
+        if (c.Patient_ID) setOptionalPatientId(String(c.Patient_ID));
+        if (c.Policy_Number) setOptionalPolicyNumber(String(c.Policy_Number));
+        setAutoFillNotice({
+          type: "success",
+          message: `Auto-filled all fields matching Claim #${cid}`,
+        });
+      } else {
+        setAutoFillNotice({
+          type: "warning",
+          message: `No existing claim found with identifier #${cid}`,
+        });
+      }
+    } catch (err) {
+      setAutoFillNotice({
+        type: "warning",
+        message: err instanceof Error ? err.message : `Failed to search Claim #${cid}`,
+      });
+    } finally {
+      setAutoFillLoading(null);
+    }
+  };
+
+  const handleAutoFillPatient = async (overrideId?: string) => {
+    const pid = (overrideId !== undefined ? overrideId : optionalPatientId).trim();
+    if (!pid) return;
+    setAutoFillLoading("patient");
+    setAutoFillNotice(null);
+    try {
+      const res = await getPersonClaims(pid);
+      if (res.claims && res.claims.length > 0 && res.claims[0]) {
+        setPreviousFormData({ ...formData });
+        const latest = res.claims[0];
+        const next: Record<string, string | number> = { ...formData };
+        const patientFields = [
+          "Patient_Age",
+          "Patient_Gender",
+          "Patient_City",
+          "Patient_State",
+          "Patient_Income_Bracket",
+          "Policy_Type",
+          "Premium_Amount",
+          "Deductible_Amount",
+          "CoPay_Amount",
+          "Hospital_ID",
+          "Provider_Type",
+          "Provider_Specialty",
+        ];
+        for (const k of patientFields) {
+          if (latest[k] !== undefined && latest[k] !== null) {
+            next[k] = String(latest[k]);
+          }
+        }
+        if (latest.Policy_Number) {
+          setOptionalPolicyNumber(String(latest.Policy_Number));
+        }
+        setFormData(next);
+        setAutoFillNotice({
+          type: "success",
+          message: `Auto-filled demographics from Patient #${pid} (${res.claims.length} prior claim${res.claims.length > 1 ? "s" : ""})`,
+        });
+      } else {
+        setAutoFillNotice({
+          type: "warning",
+          message: `No prior claims found for Patient #${pid}`,
+        });
+      }
+    } catch (err) {
+      setAutoFillNotice({
+        type: "warning",
+        message: err instanceof Error ? err.message : `Failed to search Patient #${pid}`,
+      });
+    } finally {
+      setAutoFillLoading(null);
+    }
+  };
+
+  const handleAutoFillPolicy = async (overrideNum?: string) => {
+    const pol = (overrideNum !== undefined ? overrideNum : optionalPolicyNumber).trim();
+    if (!pol) return;
+    setAutoFillLoading("policy");
+    setAutoFillNotice(null);
+    try {
+      const res = await matchClaims({ policy_number: pol });
+      if (res.matches && res.matches.length > 0 && res.matches[0]) {
+        setPreviousFormData({ ...formData });
+        const match = res.matches[0];
+        const next: Record<string, string | number> = { ...formData };
+        const policyFields = [
+          "Policy_Type",
+          "Premium_Amount",
+          "Deductible_Amount",
+          "CoPay_Amount",
+          "Network_Provider",
+          "Hospital_ID",
+          "Provider_Type",
+          "Provider_Specialty",
+        ];
+        for (const k of policyFields) {
+          if (match[k] !== undefined && match[k] !== null) {
+            next[k] = String(match[k]);
+          }
+        }
+        if (match.Patient_ID && !optionalPatientId) {
+          setOptionalPatientId(String(match.Patient_ID));
+        }
+        setFormData(next);
+        setAutoFillNotice({
+          type: "success",
+          message: `Auto-filled policy parameters matching ${pol}`,
+        });
+      } else {
+        setAutoFillNotice({
+          type: "warning",
+          message: `No existing policies found matching ${pol}`,
+        });
+      }
+    } catch (err) {
+      setAutoFillNotice({
+        type: "warning",
+        message: err instanceof Error ? err.message : `Failed to match policy ${pol}`,
+      });
+    } finally {
+      setAutoFillLoading(null);
+    }
+  };
+
+  const handleUndoAutoFill = () => {
+    if (previousFormData) {
+      setFormData(previousFormData);
+      setPreviousFormData(null);
+      setAutoFillNotice(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setScoring(true);
@@ -181,6 +381,77 @@ export const ClaimScoreForm: React.FC<ClaimScoreFormProps> = ({
       );
     } finally {
       setScoring(false);
+    }
+  };
+
+  const handleSaveClaim = async () => {
+    setSaving(true);
+    setSaveError(null);
+    setSaveConfirmation(null);
+
+    const payload: Record<string, unknown> = {
+      ...formData,
+    };
+    if (optionalClaimId.trim()) payload.Claim_ID = optionalClaimId.trim();
+    if (optionalPatientId.trim()) payload.Patient_ID = optionalPatientId.trim();
+    if (optionalPolicyNumber.trim()) payload.Policy_Number = optionalPolicyNumber.trim();
+
+    try {
+      const res = await createClaim(payload);
+
+      const rawClaimId: string | number =
+        res.claim_id !== undefined && res.claim_id !== null
+          ? res.claim_id
+          : typeof res.claim?.Claim_ID === "string" || typeof res.claim?.Claim_ID === "number"
+          ? res.claim.Claim_ID
+          : "New";
+      const formattedClaimId = String(rawClaimId).startsWith("CLM-")
+        ? String(rawClaimId)
+        : `CLM-${rawClaimId}`;
+
+      const confirmation = {
+        claimId: formattedClaimId,
+        rawId: rawClaimId,
+        message: res.message || `Claim ${formattedClaimId} saved successfully.`,
+        prediction: res.prediction,
+      };
+
+      setSaveConfirmation(confirmation);
+
+      // If prediction was returned, sync it into local fraudResult and statusResult
+      if (res.prediction) {
+        setFraudResult({
+          fraud_probability: res.prediction.fraud_probability,
+          is_fraud: res.prediction.is_fraud,
+          risk_level: res.prediction.risk_level,
+        });
+        if (res.prediction.predicted_status) {
+          setStatusResult({
+            predicted_status: res.prediction.predicted_status,
+            probabilities: res.prediction.status_probabilities || {},
+          });
+        }
+      }
+
+      if (onSaved) {
+        onSaved(res);
+      }
+
+      // Trigger global refetch event so Overview, Insights, Analytics dashboards update
+      window.dispatchEvent(
+        new CustomEvent("claimSaved", {
+          detail: {
+            claimId: formattedClaimId,
+            response: res,
+          },
+        })
+      );
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "Failed to persist claim to dataset"
+      );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -337,55 +608,199 @@ export const ClaimScoreForm: React.FC<ClaimScoreFormProps> = ({
               </span>
             </div>
 
-            {/* Optional Identifier Labels */}
-            <div className="p-3 rounded-lg bg-bg-card-alt/60 border border-border/70 space-y-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted block">
-                Filing Identifiers (Optional Labels)
-              </span>
+            {/* Optional Identifier Labels with Auto-Fill */}
+            <div className="p-3 rounded-lg bg-bg-card-alt/60 border border-border/70 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted block">
+                  Filing Identifiers &amp; Smart Auto-Fill
+                </span>
+                <span className="text-[11px] text-accent flex items-center gap-1 font-medium">
+                  <IconSparkles size={13} />
+                  Auto-fills from existing records
+                </span>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-text-secondary truncate">
-                    Claim ID
-                  </label>
-                  <input
-                    type="text"
-                    value={optionalClaimId}
-                    onChange={(e) => setOptionalClaimId(e.target.value)}
-                    placeholder="e.g. 101"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-md bg-bg-card border border-border text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-medium text-text-secondary truncate">
+                      Claim ID
+                    </label>
+                  </div>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={optionalClaimId}
+                      onChange={(e) => setOptionalClaimId(e.target.value)}
+                      onBlur={() => {
+                        if (optionalClaimId.trim() && !autoFillNotice) {
+                          void handleAutoFillClaim();
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleAutoFillClaim();
+                        }
+                      }}
+                      placeholder="e.g. 101"
+                      className="w-full pl-2.5 pr-8 py-1.5 text-xs rounded-md bg-bg-card border border-border text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      title="Look up claim and auto-fill details"
+                      onClick={() => void handleAutoFillClaim()}
+                      disabled={autoFillLoading === "claim" || !optionalClaimId.trim()}
+                      className="absolute right-1 px-1.5 py-1 text-text-muted hover:text-accent disabled:opacity-30 rounded transition-colors"
+                    >
+                      {autoFillLoading === "claim" ? (
+                        <IconCpu size={14} className="animate-spin text-accent" />
+                      ) : (
+                        <IconSearch size={14} />
+                      )}
+                    </button>
+                  </div>
                 </div>
+
                 <div>
-                  <label className="block text-[11px] font-medium text-text-secondary truncate">
-                    Patient ID
-                  </label>
-                  <input
-                    type="text"
-                    value={optionalPatientId}
-                    onChange={(e) => setOptionalPatientId(e.target.value)}
-                    placeholder="e.g. P1002"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-md bg-bg-card border border-border text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-medium text-text-secondary truncate">
+                      Patient ID
+                    </label>
+                  </div>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={optionalPatientId}
+                      onChange={(e) => setOptionalPatientId(e.target.value)}
+                      onBlur={() => {
+                        if (optionalPatientId.trim() && !autoFillNotice) {
+                          void handleAutoFillPatient();
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleAutoFillPatient();
+                        }
+                      }}
+                      placeholder="e.g. P1002"
+                      className="w-full pl-2.5 pr-8 py-1.5 text-xs rounded-md bg-bg-card border border-border text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      title="Look up patient history and auto-fill demographics"
+                      onClick={() => void handleAutoFillPatient()}
+                      disabled={autoFillLoading === "patient" || !optionalPatientId.trim()}
+                      className="absolute right-1 px-1.5 py-1 text-text-muted hover:text-accent disabled:opacity-30 rounded transition-colors"
+                    >
+                      {autoFillLoading === "patient" ? (
+                        <IconCpu size={14} className="animate-spin text-accent" />
+                      ) : (
+                        <IconSearch size={14} />
+                      )}
+                    </button>
+                  </div>
                 </div>
+
                 <div>
-                  <label className="block text-[11px] font-medium text-text-secondary truncate">
-                    Policy Number
-                  </label>
-                  <input
-                    type="text"
-                    value={optionalPolicyNumber}
-                    onChange={(e) => setOptionalPolicyNumber(e.target.value)}
-                    placeholder="e.g. POL-8821"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-md bg-bg-card border border-border text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-medium text-text-secondary truncate">
+                      Policy Number
+                    </label>
+                  </div>
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={optionalPolicyNumber}
+                      onChange={(e) => setOptionalPolicyNumber(e.target.value)}
+                      onBlur={() => {
+                        if (optionalPolicyNumber.trim() && !autoFillNotice) {
+                          void handleAutoFillPolicy();
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void handleAutoFillPolicy();
+                        }
+                      }}
+                      placeholder="e.g. POL-8821"
+                      className="w-full pl-2.5 pr-8 py-1.5 text-xs rounded-md bg-bg-card border border-border text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      title="Look up policy coverage and auto-fill parameters"
+                      onClick={() => void handleAutoFillPolicy()}
+                      disabled={autoFillLoading === "policy" || !optionalPolicyNumber.trim()}
+                      className="absolute right-1 px-1.5 py-1 text-text-muted hover:text-accent disabled:opacity-30 rounded transition-colors"
+                    >
+                      {autoFillLoading === "policy" ? (
+                        <IconCpu size={14} className="animate-spin text-accent" />
+                      ) : (
+                        <IconSearch size={14} />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              {/* Auto-Fill Banner / Notification */}
+              {autoFillNotice && (
+                <div
+                  className={`p-2.5 rounded-md text-xs flex items-center justify-between gap-2 transition-all ${
+                    autoFillNotice.type === "success"
+                      ? "bg-accent/10 border border-accent/30 text-accent font-medium"
+                      : "bg-warning/10 border border-warning/30 text-warning-text"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 truncate">
+                    {autoFillNotice.type === "success" ? (
+                      <IconSparkles size={15} className="shrink-0 text-accent" />
+                    ) : (
+                      <IconAlertCircle size={15} className="shrink-0 text-warning-text" />
+                    )}
+                    <span className="truncate">{autoFillNotice.message}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {previousFormData && (
+                      <button
+                        type="button"
+                        onClick={handleUndoAutoFill}
+                        className="inline-flex items-center gap-1 text-[11px] underline hover:opacity-80 font-medium"
+                      >
+                        <IconArrowBackUp size={12} />
+                        Undo
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setAutoFillNotice(null)}
+                      className="p-1 rounded hover:bg-bg-card text-text-muted hover:text-text-primary transition-colors"
+                    >
+                      <IconX size={12} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Helper Notice for Required vs Default Fields */}
+            <div className="flex flex-wrap items-center justify-between text-[11px] text-text-muted px-1">
+              <span>
+                <strong className="text-danger-text text-xs mr-0.5">*</strong>
+                Required adjudication fields
+              </span>
+              <span className="italic">
+                Blank fields automatically populate with standard defaults on save
+              </span>
             </div>
 
             {/* Dynamic Model Input Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[520px] overflow-y-auto pr-2">
               {activeFields.map((field) => {
                 const isCat = categoricalFields.has(field);
+                const isRequired = REQUIRED_FIELDS.has(field);
                 const fieldOptions =
                   options && field in options
                     ? options[field as keyof OptionsResponse]
@@ -401,6 +816,14 @@ export const ClaimScoreForm: React.FC<ClaimScoreFormProps> = ({
                       title={field}
                     >
                       {field.replace(/_/g, " ")}
+                      {isRequired && (
+                        <span
+                          className="text-danger-text font-bold ml-1"
+                          title="Required field for complete adjudication"
+                        >
+                          *
+                        </span>
+                      )}
                     </label>
 
                     {isCat && fieldOptions && fieldOptions.length > 0 ? (
@@ -450,35 +873,102 @@ export const ClaimScoreForm: React.FC<ClaimScoreFormProps> = ({
                   setOptionalClaimId("");
                   setOptionalPatientId("");
                   setOptionalPolicyNumber("");
+                  setSaveConfirmation(null);
+                  setSaveError(null);
+                  setAutoFillNotice(null);
+                  setPreviousFormData(null);
                 }}
                 className="px-4 py-2 text-xs font-medium rounded-lg text-text-muted hover:text-text-primary transition-colors"
               >
                 Clear Fields
               </button>
 
-              <button
-                type="submit"
-                disabled={scoring || Object.keys(formData).length === 0}
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold rounded-lg bg-accent text-bg-page hover:bg-accent/90 transition-colors disabled:opacity-50"
-              >
-                {scoring ? (
-                  <>
-                    <IconCpu className="animate-spin" size={16} />
-                    Scoring Claim...
-                  </>
-                ) : (
-                  <>
-                    <IconSend size={16} />
-                    Evaluate Claim
-                  </>
+              <div className="flex items-center gap-3">
+                {showSaveButton && (
+                  <button
+                    type="button"
+                    onClick={handleSaveClaim}
+                    disabled={saving || scoring || Object.keys(formData).length === 0}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold rounded-lg bg-bg-card-alt border border-accent/40 text-accent hover:bg-accent/10 transition-colors disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <>
+                        <IconCpu className="animate-spin" size={16} />
+                        Saving Claim...
+                      </>
+                    ) : (
+                      <>
+                        <IconDeviceFloppy size={16} />
+                        Save Claim
+                      </>
+                    )}
+                  </button>
                 )}
-              </button>
+
+                <button
+                  type="submit"
+                  disabled={scoring || saving || Object.keys(formData).length === 0}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-semibold rounded-lg bg-accent text-bg-page hover:bg-accent/90 transition-colors disabled:opacity-50"
+                >
+                  {scoring ? (
+                    <>
+                      <IconCpu className="animate-spin" size={16} />
+                      Scoring Claim...
+                    </>
+                  ) : (
+                    <>
+                      <IconSend size={16} />
+                      Evaluate Claim
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         </div>
 
         {/* Prediction Results Panel */}
         <div className="lg:col-span-5 space-y-6">
+          {saveError && (
+            <div className="card p-4 border-danger/40 bg-danger-bg/50 text-danger-text text-xs flex items-start gap-2.5">
+              <IconAlertCircle size={18} className="shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold block">Save Claim Error</span>
+                {saveError}
+              </div>
+            </div>
+          )}
+
+          {saveConfirmation && (
+            <div className="card p-5 space-y-3 border-accent/40 bg-accent/5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-accent">
+                  <IconCheck size={18} className="shrink-0" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider">
+                    Claim {saveConfirmation.claimId} saved
+                  </h4>
+                </div>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-accent/20 text-accent">
+                  Persisted to Dataset
+                </span>
+              </div>
+              <p className="text-xs text-text-primary leading-relaxed">
+                {saveConfirmation.message}
+              </p>
+              {saveConfirmation.prediction && (
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/80 text-xs">
+                  <span className="text-text-muted">Recorded Status:</span>
+                  <StatusBadge status={saveConfirmation.prediction.predicted_status || "Approved"} />
+                  <span className="text-text-muted ml-2">Fraud Risk:</span>
+                  <StatusBadge status={saveConfirmation.prediction.risk_level} />
+                  <span className="font-semibold text-accent">
+                    {(saveConfirmation.prediction.fraud_probability * 100).toFixed(1)}%
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           {scoreError && (
             <div className="card p-4 border-danger/40 bg-danger-bg/50 text-danger-text text-xs flex items-start gap-2.5">
               <IconAlertCircle size={18} className="shrink-0 mt-0.5" />

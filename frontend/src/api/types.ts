@@ -406,12 +406,21 @@ export interface ReviewClaimsResponse {
 }
 
 export interface ClaimMutationResponse {
+  ok?: boolean;
   updated?: boolean;
   created?: boolean;
   row_id: number;
-  claim_id?: string;
+  claim_id?: string | number;
   claim: Record<string, string | number | boolean | null>;
+  prediction?: {
+    fraud_probability: number;
+    is_fraud: boolean;
+    risk_level: "High" | "Medium" | "Low";
+    predicted_status: string;
+    status_probabilities?: Record<string, number>;
+  };
   retrain_needed: boolean;
+  message?: string;
 }
 
 export interface ClaimMatchResponse {

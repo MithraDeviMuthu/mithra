@@ -12,21 +12,23 @@ import {
   IconFileCheck,
 } from "@tabler/icons-react";
 import { getStats } from "../api";
-import type { StatsResponse } from "../api/types";
+import type { StatsResponse, FilterParams } from "../api";
 import { Loading } from "../components/Loading";
 import { ErrorState } from "../components/ErrorState";
+import { DashboardFilters } from "../components/DashboardFilters";
 
 export const Overview: React.FC = () => {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<FilterParams>({});
 
-  const loadData = async () => {
+  const loadData = async (activeFilters: FilterParams = filters, timestamp?: number) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await getStats();
+      const response = await getStats(activeFilters, timestamp);
       setStats(response);
     } catch (err) {
       setError(
@@ -40,8 +42,17 @@ export const Overview: React.FC = () => {
   };
 
   useEffect(() => {
-    void loadData();
-  }, []);
+    void loadData(filters);
+
+    const handleClaimSaved = () => {
+      // Bypass cache with new timestamp on claim saved
+      void loadData(filters, Date.now());
+    };
+    window.addEventListener("claimSaved", handleClaimSaved);
+    return () => {
+      window.removeEventListener("claimSaved", handleClaimSaved);
+    };
+  }, [filters]);
 
   if (loading) {
     return (
@@ -102,6 +113,15 @@ export const Overview: React.FC = () => {
           </p>
         </div>
       </header>
+
+      {/* Interactive Range Filters */}
+      <DashboardFilters
+        initialFilters={filters}
+        onFilterChange={(newFilters) => {
+          setFilters(newFilters);
+          void loadData(newFilters, Date.now());
+        }}
+      />
 
       <section>
         <div className="mb-4">

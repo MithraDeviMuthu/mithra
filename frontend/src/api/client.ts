@@ -117,6 +117,24 @@ export const apiClient = {
     return handleResponse<T>(response);
   },
 
+  async patch<T>(path: string, body?: unknown, params?: Record<string, string | number | boolean | undefined | null>): Promise<T> {
+    const url = buildUrl(path, params);
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+    if (body !== undefined) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    const response = await fetch(url, {
+      method: "PATCH",
+      headers,
+      credentials: "include",
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    return handleResponse<T>(response);
+  },
+
   async delete<T>(path: string, params?: Record<string, string | number | boolean | undefined | null>): Promise<T> {
     const url = buildUrl(path, params);
     const response = await fetch(url, {
@@ -144,3 +162,4 @@ export const apiClient = {
 };
 
 export default apiClient;
+

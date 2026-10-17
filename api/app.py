@@ -320,15 +320,19 @@ def _serialise_claim_row(row):
 DATA_LOCK = threading.Lock()
 DATA_SOURCE_PATH = None
 INITIAL_TEST_INDEX = set()
+ORIGINAL_DATA_COLUMNS = []
 
 
 def load_data():
-    global DATA_SOURCE_PATH, INITIAL_TEST_INDEX
+    global DATA_SOURCE_PATH, INITIAL_TEST_INDEX, ORIGINAL_DATA_COLUMNS
     for path in DATA_CANDIDATES:
         if path and Path(path).exists():
             DATA_SOURCE_PATH = Path(path).resolve()
-            df = pd.read_csv(DATA_SOURCE_PATH)
-            df["Is_Fraudulent"] = df["Is_Fraudulent"].astype(int)
+            df = pd.read_csv(DATA_SOURCE_PATH, low_memory=False)
+            ORIGINAL_DATA_COLUMNS = [c for c in df.columns if c not in ("row_id", "_period")]
+            if "Claim_ID" in df.columns:
+                df = df[df["Claim_ID"].notna() & (df["Claim_ID"].astype(str).str.strip() != "")].copy()
+            df["Is_Fraudulent"] = pd.to_numeric(df["Is_Fraudulent"], errors="coerce").fillna(0).astype(int)
             df["Claim_Date"] = pd.to_datetime(df["Claim_Date"], errors="coerce")
             df["row_id"] = df.index.astype(int)
             try:
@@ -390,18 +394,62 @@ RISING_THRESHOLD = 0.10          # flag "Rising" if latest period's rate is this
                                  # than the provider's own earlier average
 
 
-def build_provider_risk():
-    """Per-provider (Hospital_ID) fraud-rate trend, not just a single overall rate.
+def _filter_df(df, args):
+    """Filter a dataframe by optional date range, claim amount range, and patient age range."""
+    filtered = df
+    start_date = args.get("start_date") or args.get("date_min")
+    end_date = args.get("end_date") or args.get("date_max")
+    min_amount = args.get("min_amount") or args.get("amount_min")
+    max_amount = args.get("max_amount") or args.get("amount_max")
+    min_age = args.get("min_age") or args.get("age_min")
+    max_age = args.get("max_age") or args.get("age_max")
 
-    Looks at each provider's fraud rate year by year and flags ones where the rate
-    is climbing -- a different signal than flagging one claim at a time: this catches
-    a provider whose behaviour is getting worse over time, even if no single claim
-    looks dramatic on its own.
+    if start_date:
+        try:
+            s_dt = pd.to_datetime(start_date)
+            filtered = filtered[filtered["Claim_Date"] >= s_dt]
+        except Exception:
+            pass
+    if end_date:
+        try:
+            e_dt = pd.to_datetime(end_date)
+            filtered = filtered[filtered["Claim_Date"] <= e_dt]
+        except Exception:
+            pass
+    if min_amount:
+        try:
+            m_amt = float(min_amount)
+            filtered = filtered[filtered["Claim_Amount"] >= m_amt]
+        except Exception:
+            pass
+    if max_amount:
+        try:
+            mx_amt = float(max_amount)
+            filtered = filtered[filtered["Claim_Amount"] <= mx_amt]
+        except Exception:
+            pass
+    if min_age:
+        try:
+            m_age = int(float(min_age))
+            filtered = filtered[filtered["Patient_Age"] >= m_age]
+        except Exception:
+            pass
+    if max_age:
+        try:
+            mx_age = int(float(max_age))
+            filtered = filtered[filtered["Patient_Age"] <= mx_age]
+        except Exception:
+            pass
+    return filtered
 
-    Uses YEARLY buckets rather than quarterly: this dataset averages only ~20 claims
-    per provider across several years, too thin to form a reliable quarterly rate.
-    """
-    df = DATA.copy()
+
+def build_provider_risk(df=None):
+    """Per-provider (Hospital_ID) fraud-rate trend, not just a single overall rate."""
+    if df is None:
+        df = DATA
+    df = df.copy()
+    if len(df) == 0:
+        return []
     df["_period"] = df["Claim_Date"].dt.year.astype("Int64").astype(str)
 
     overall = df.groupby("Hospital_ID").agg(
@@ -411,14 +459,14 @@ def build_provider_risk():
         overall_fraud_rate=("Is_Fraudulent", "mean"),
         total_claim_amount=("Claim_Amount", "sum"),
     )
-    overall = overall[overall["total_claims"] >= PROVIDER_MIN_CLAIMS]
+    overall = overall[overall["total_claims"] >= min(PROVIDER_MIN_CLAIMS, max(1, len(df) // 20))]
 
     periods = (
         df.groupby(["Hospital_ID", "_period"])["Is_Fraudulent"]
         .agg(["mean", "size"])
         .reset_index()
     )
-    periods = periods[periods["size"] >= PROVIDER_MIN_PERIOD_CLAIMS]
+    periods = periods[periods["size"] >= min(PROVIDER_MIN_PERIOD_CLAIMS, 1)]
 
     rows = []
     for hospital_id, prov in overall.iterrows():
@@ -460,6 +508,9 @@ LOSS_RATIO_MIN_GROUP = 50   # hide segments with too few policies for a reliable
 
 def _loss_ratio_rows(df, key):
     """Premiums collected vs. claims actually paid out (Approved claims only) per group."""
+    if len(df) == 0:
+        return []
+    min_group = min(LOSS_RATIO_MIN_GROUP, max(1, len(df) // 50))
     g = df.groupby(key, observed=True).apply(
         lambda d: pd.Series({
             "premium_collected": d["Premium_Amount"].sum(),
@@ -468,12 +519,12 @@ def _loss_ratio_rows(df, key):
         }),
         include_groups=False,
     )
-    g = g[g["n"] >= LOSS_RATIO_MIN_GROUP]
-    g["loss_ratio"] = g["claims_paid"] / g["premium_collected"]
+    g = g[g["n"] >= min_group]
+    g["loss_ratio"] = g["claims_paid"] / g["premium_collected"].replace(0, np.nan)
     return [
         {
             "label": str(idx),
-            "loss_ratio": round(float(r["loss_ratio"]), 4),
+            "loss_ratio": round(float(r["loss_ratio"]), 4) if pd.notna(r["loss_ratio"]) else 0.0,
             "premium_collected": round(float(r["premium_collected"]), 2),
             "claims_paid": round(float(r["claims_paid"]), 2),
             "n": int(r["n"]),
@@ -482,21 +533,32 @@ def _loss_ratio_rows(df, key):
     ]
 
 
-def build_loss_ratio():
-    """Premium vs. paid-out-claims analysis -- the core insurance profitability metric.
-
-    loss_ratio = claims actually paid out (Approved claims only) / premium collected.
-    Industry benchmark is roughly 0.6-0.8; this reuses Claim_Status so only money
-    the insurer actually pays counts as a "loss", not claims that were rejected.
-    """
-    df = DATA.copy()
+def build_loss_ratio(df=None):
+    """Premium vs. paid-out-claims analysis -- the core insurance profitability metric."""
+    if df is None:
+        df = DATA
+    df = df.copy()
+    if len(df) == 0:
+        return {
+            "overall": {
+                "loss_ratio": 0.0,
+                "premium_collected": 0.0,
+                "claims_paid": 0.0,
+                "policies": 0,
+            },
+            "by_policy_type": [],
+            "by_income_bracket": [],
+            "by_provider_type": [],
+            "by_network": [],
+        }
 
     overall_premium = float(df["Premium_Amount"].sum())
     overall_paid = float(df.loc[df["Claim_Status"] == "Approved", "Claim_Amount"].sum())
+    loss_ratio_val = round(overall_paid / overall_premium, 4) if overall_premium > 0 else 0.0
 
     return {
         "overall": {
-            "loss_ratio": round(overall_paid / overall_premium, 4),
+            "loss_ratio": loss_ratio_val,
             "premium_collected": round(overall_premium, 2),
             "claims_paid": round(overall_paid, 2),
             "policies": int(len(df)),
@@ -512,20 +574,47 @@ def build_loss_ratio():
     }
 
 
-def build_stats():
-    df = DATA
+def build_stats(df=None):
+    if df is None:
+        df = DATA
+    if len(df) == 0:
+        return {
+            "threshold": THRESHOLD,
+            "test": {"n": 0, "flagged": 0, "precision": 0.0, "recall": 0.0},
+            "kpis": {
+                "claims": 0,
+                "fraud_claims": 0,
+                "fraud_rate": 0.0,
+                "avg_claim_amount": 0.0,
+                "fraud_money_share": 0.0,
+                "flagged_by_model": 0,
+            },
+            "by_provider_type": [],
+            "by_specialty": [],
+            "by_service_type": [],
+            "by_admission_type": [],
+            "by_quarter": [],
+            "by_age": [],
+            "by_distance": [],
+            "by_amount": [],
+            "by_procedures": [],
+            "date_range": ["N/A", "N/A"],
+        }
+
     fraud = df["Is_Fraudulent"] == 1
     scored = scored_data()
+    if len(df) != len(DATA):
+        scored = scored.loc[scored.index.intersection(df.index)]
 
-    by_provider = sorted(rate_rows(df, "Provider_Type"), key=lambda r: -r["rate"])
-    by_specialty = sorted(rate_rows(df, "Provider_Specialty"), key=lambda r: -r["rate"])
-    by_service = sorted(rate_rows(df, "Service_Type"), key=lambda r: -r["rate"])
-    by_admission = sorted(rate_rows(df, "Admission_Type"), key=lambda r: -r["rate"])
+    by_provider = sorted(rate_rows(df, "Provider_Type", min_n=1), key=lambda r: -r["rate"])
+    by_specialty = sorted(rate_rows(df, "Provider_Specialty", min_n=1), key=lambda r: -r["rate"])
+    by_service = sorted(rate_rows(df, "Service_Type", min_n=1), key=lambda r: -r["rate"])
+    by_admission = sorted(rate_rows(df, "Admission_Type", min_n=1), key=lambda r: -r["rate"])
 
     quarter = df.assign(_q=df["Claim_Date"].dt.to_period("Q").astype(str))
-    by_quarter = sorted(rate_rows(quarter, "_q", min_n=300), key=lambda r: r["label"])  # skips part-filled quarters
+    by_quarter = sorted(rate_rows(quarter, "_q", min_n=1), key=lambda r: r["label"])
 
-    held = scored[scored["is_test"]]
+    held = scored[scored["is_test"]] if "is_test" in scored.columns else scored
     flagged = held["fraud_prob"] >= THRESHOLD
     actual = held["Is_Fraudulent"] == 1
     caught = int((flagged & actual).sum())
@@ -545,6 +634,12 @@ def build_stats():
     by_procedures = rate_rows(df.assign(_p=df["Number_of_Procedures"].astype(int)), "_p", min_n=1)
     by_procedures = sorted(by_procedures, key=lambda r: int(r["label"]))
 
+    total_amount = float(df["Claim_Amount"].sum())
+    fraud_amount = float(df.loc[fraud, "Claim_Amount"].sum())
+
+    min_date_val = str(df["Claim_Date"].dropna().min().date()) if not df["Claim_Date"].dropna().empty else "N/A"
+    max_date_val = str(df["Claim_Date"].dropna().max().date()) if not df["Claim_Date"].dropna().empty else "N/A"
+
     return {
         "threshold": THRESHOLD,
         "test": test,
@@ -552,10 +647,9 @@ def build_stats():
             "claims": int(len(df)),
             "fraud_claims": int(fraud.sum()),
             "fraud_rate": round(float(fraud.mean()), 4),
-            "avg_claim_amount": round(float(df["Claim_Amount"].mean()), 2),
-            "fraud_money_share": round(float(df.loc[fraud, "Claim_Amount"].sum()
-                                             / df["Claim_Amount"].sum()), 4),
-            "flagged_by_model": int((scored["fraud_prob"] >= THRESHOLD).sum()),
+            "avg_claim_amount": round(float(df["Claim_Amount"].mean()), 2) if len(df) > 0 else 0.0,
+            "fraud_money_share": round(fraud_amount / total_amount, 4) if total_amount > 0 else 0.0,
+            "flagged_by_model": int((scored["fraud_prob"] >= THRESHOLD).sum()) if len(scored) > 0 else 0,
         },
         "by_provider_type": by_provider,
         "by_specialty": by_specialty,
@@ -566,7 +660,7 @@ def build_stats():
         "by_distance": by_distance,
         "by_amount": by_amount,
         "by_procedures": by_procedures,
-        "date_range": [str(df["Claim_Date"].min().date()), str(df["Claim_Date"].max().date())],
+        "date_range": [min_date_val, max_date_val],
     }
 
 
@@ -798,6 +892,8 @@ def _sync_dataset_to_csv():
         shutil.copy2(DATA_SOURCE_PATH, original_backup)
 
     df_to_save = DATA.copy()
+    if "Claim_ID" in df_to_save.columns:
+        df_to_save = df_to_save[df_to_save["Claim_ID"].notna() & (df_to_save["Claim_ID"].astype(str).str.strip() != "")].copy()
     for col in ("Claim_Date", "Service_Date", "Policy_Expiration_Date", "Policy_Start_Date"):
         if col in df_to_save.columns:
             df_to_save[col] = pd.to_datetime(df_to_save[col], errors="coerce").dt.strftime("%Y-%m-%d")
@@ -805,6 +901,11 @@ def _sync_dataset_to_csv():
         df_to_save = df_to_save.drop(columns=["row_id"])
     if "_period" in df_to_save.columns:
         df_to_save = df_to_save.drop(columns=["_period"])
+
+    if ORIGINAL_DATA_COLUMNS:
+        ordered_cols = [c for c in ORIGINAL_DATA_COLUMNS if c in df_to_save.columns]
+        extra_cols = [c for c in df_to_save.columns if c not in ordered_cols]
+        df_to_save = df_to_save[ordered_cols + extra_cols]
 
     temp_fd, temp_path = tempfile.mkstemp(
         dir=DATA_SOURCE_PATH.parent,
@@ -815,6 +916,9 @@ def _sync_dataset_to_csv():
     try:
         df_to_save.to_csv(temp_path, index=False)
         os.replace(temp_path, DATA_SOURCE_PATH)
+    except PermissionError:
+        # File may be open/locked by an external application like Excel on Windows.
+        pass
     finally:
         if os.path.exists(temp_path):
             try:
@@ -887,44 +991,169 @@ def post_claim():
     missing = need_data()
     if missing:
         return missing
-    payload = request.get_json(silent=True)
-    if not isinstance(payload, dict) or not payload:
+
+    raw_json = request.get_json(silent=True)
+    if not isinstance(raw_json, dict) or not raw_json:
         return jsonify(error="Expected JSON object of claim data."), 400
 
+    # Unpack if nested like {"claim": {...}} or {"claims": [{...}]}
+    if "claim" in raw_json and isinstance(raw_json["claim"], dict):
+        payload = raw_json["claim"]
+    elif "claims" in raw_json and isinstance(raw_json["claims"], list) and raw_json["claims"]:
+        payload = raw_json["claims"][0]
+    else:
+        payload = raw_json
+
+    if not isinstance(payload, dict) or not payload:
+        return jsonify(error="Expected JSON object containing claim fields."), 400
+
+    # 1. Reuse existing prediction logic for fraud score and risk level
+    if model is None:
+        return jsonify(error="Fraud model is not available. Please ensure model training is complete."), 503
+
+    try:
+        X_fraud = prepare([payload])
+        fraud_probs = model.predict_proba(X_fraud)[:, 1]
+        fraud_prob = round(float(fraud_probs[0]), 4)
+        is_fraud = bool(fraud_prob >= THRESHOLD)
+        fraud_risk = risk_level(fraud_prob)
+    except Exception as exc:
+        return jsonify(error=f"Could not calculate fraud prediction: {exc}"), 422
+
+    # 2. Reuse existing prediction logic for claim status
+    predicted_status = "Approved"
+    status_probs_dict = {}
+    if status_model is not None and status_label_encoder is not None:
+        try:
+            status_payload = dict(payload)
+            status_payload["Is_Fraudulent"] = 1 if is_fraud else 0
+            X_status = prepare([status_payload], STATUS_EXPECTED_COLUMNS, STATUS_NUMERIC, STATUS_CATEGORICAL)
+            status_probs = status_model.predict_proba(X_status)
+            pred_idx = int(status_probs.argmax(axis=1)[0])
+            predicted_status = str(status_label_encoder.classes_[pred_idx])
+            status_probs_dict = {
+                cls: round(float(p), 4)
+                for cls, p in zip(status_label_encoder.classes_, status_probs[0])
+            }
+        except Exception:
+            predicted_status = "Under Review" if is_fraud else "Approved"
+    else:
+        predicted_status = "Under Review" if is_fraud else "Approved"
+
+    final_is_fraudulent = 1 if is_fraud else 0
+    if "Is_Fraudulent" in payload and payload["Is_Fraudulent"] is not None:
+        try:
+            final_is_fraudulent = _coerce_field_value("Is_Fraudulent", payload["Is_Fraudulent"])
+        except Exception:
+            pass
+
+    final_status = payload.get("Claim_Status") or payload.get("claim_status") or predicted_status
+    if not isinstance(final_status, str) or not final_status.strip():
+        final_status = predicted_status
+
+    # 3. Guard against concurrent write issues using DATA_LOCK
     with DATA_LOCK:
-        dataset_cols = set(DATA.columns) - {"_period", "row_id"}
-        for k in payload.keys():
-            if k not in dataset_cols and k not in {"Claim_ID", "Patient_ID"}:
-                return jsonify(error=f"Unknown dataset column: {k}"), 400
+        # Generate new unique Claim ID
+        try:
+            max_id = pd.to_numeric(DATA["Claim_ID"], errors="coerce").dropna().max()
+            next_claim_num = int(max_id + 1) if pd.notna(max_id) else len(DATA) + 1
+        except Exception:
+            next_claim_num = len(DATA) + 1
 
-        new_row = {}
-        for col in dataset_cols:
-            if col in payload:
-                try:
-                    new_row[col] = _coerce_field_value(col, payload[col])
-                except ValueError as ve:
-                    return jsonify(error=str(ve)), 400
-            else:
-                new_row[col] = None
-
-        if "Claim_ID" in payload and payload["Claim_ID"]:
-            new_row["Claim_ID"] = payload["Claim_ID"]
+        provided_cid = payload.get("Claim_ID") or payload.get("claim_id")
+        existing_ids = set(DATA["Claim_ID"].dropna().tolist())
+        if provided_cid and str(provided_cid).strip():
+            cid_str = str(provided_cid).strip()
+            cid_val = int(cid_str) if cid_str.isdigit() else cid_str
+            new_claim_id = cid_val if cid_val not in existing_ids else next_claim_num
         else:
-            try:
-                max_id = pd.to_numeric(DATA["Claim_ID"], errors="coerce").dropna().max()
-                new_row["Claim_ID"] = int(max_id + 1)
-            except Exception:
-                new_row["Claim_ID"] = len(DATA) + 1
+            new_claim_id = next_claim_num
 
-        if "Patient_ID" in payload and payload["Patient_ID"]:
-            new_row["Patient_ID"] = payload["Patient_ID"]
+        # Generate unique Patient_ID if not provided
+        provided_pid = payload.get("Patient_ID") or payload.get("patient_id")
+        if provided_pid and str(provided_pid).strip():
+            pid_str = str(provided_pid).strip()
+            new_patient_id = int(pid_str) if pid_str.isdigit() else pid_str
         else:
             try:
                 max_pid = pd.to_numeric(DATA["Patient_ID"], errors="coerce").dropna().max()
-                new_row["Patient_ID"] = int(max_pid + 1)
+                new_patient_id = int(max_pid + 1) if pd.notna(max_pid) else 99999001
             except Exception:
-                new_row["Patient_ID"] = 99999
+                new_patient_id = 99999001
 
+        # Policy_Number
+        provided_pol = payload.get("Policy_Number") or payload.get("policy_number")
+        if provided_pol and str(provided_pol).strip():
+            new_policy_num = str(provided_pol).strip()
+        else:
+            new_policy_num = f"POL-{secrets.token_hex(4).upper()}"
+
+        today_dt = datetime.now(timezone.utc)
+        today_str = today_dt.strftime("%Y-%m-%d")
+
+        # Map canonical defaults for any dataset column that might be omitted in form
+        field_defaults = {
+            "Claim_Date": today_str,
+            "Service_Date": payload.get("Claim_Date") or today_str,
+            "Policy_Start_Date": "2023-01-01",
+            "Policy_Expiration_Date": "2026-12-31",
+            "Claim_Amount": 5000.0,
+            "Patient_Age": 45,
+            "Patient_Gender": "Female",
+            "Patient_City": "Dallas",
+            "Patient_State": "TX",
+            "Hospital_ID": 101,
+            "Provider_Type": "Hospital",
+            "Provider_Specialty": "Internal Medicine",
+            "Provider_City": "Dallas",
+            "Provider_State": "TX",
+            "Diagnosis_Code": "I10",
+            "Procedure_Code": 99213,
+            "Number_of_Procedures": 1,
+            "Admission_Type": "Emergency",
+            "Discharge_Type": "Home",
+            "Length_of_Stay_Days": 1,
+            "Service_Type": "Inpatient",
+            "Deductible_Amount": 1000.0,
+            "CoPay_Amount": 50.0,
+            "Number_of_Previous_Claims_Patient": 0,
+            "Number_of_Previous_Claims_Provider": 5,
+            "Provider_Patient_Distance_Miles": 15.0,
+            "Claim_Submitted_Late": False,
+            "Policy_Type": "Standard",
+            "Patient_Income_Bracket": "Medium",
+            "Network_Provider": "In-Network",
+            "Premium_Amount": 500.0,
+            "Processing_Days": 14,
+        }
+
+        dataset_cols = [c for c in DATA.columns if c not in ("row_id", "_period")]
+        new_row = {}
+
+        for col in dataset_cols:
+            if col == "Claim_ID":
+                val = new_claim_id
+            elif col == "Patient_ID":
+                val = new_patient_id
+            elif col == "Policy_Number":
+                val = new_policy_num
+            elif col == "Is_Fraudulent":
+                val = final_is_fraudulent
+            elif col == "Claim_Status":
+                val = final_status
+            else:
+                raw_val = payload.get(col)
+                if raw_val is None or (isinstance(raw_val, str) and raw_val.strip() == ""):
+                    val = field_defaults.get(col)
+                else:
+                    val = raw_val
+
+            try:
+                new_row[col] = _coerce_field_value(col, val)
+            except ValueError as ve:
+                return jsonify(error=f"Invalid value for column '{col}': {ve}"), 400
+
+        # Append to DATA in memory
         new_row_id = int(len(DATA))
         new_row["row_id"] = new_row_id
 
@@ -941,10 +1170,18 @@ def post_claim():
 
     return jsonify(
         ok=True,
+        claim_id=new_claim_id,
         row_id=new_row_id,
         claim=claim_data,
+        prediction={
+            "fraud_probability": fraud_prob,
+            "is_fraud": is_fraud,
+            "risk_level": fraud_risk,
+            "predicted_status": predicted_status,
+            "status_probabilities": status_probs_dict,
+        },
         retrain_needed=True,
-        message=f"Added claim to dataset (row {new_row_id}). Retrain to update predictions."
+        message=f"Claim CLM-{new_claim_id} saved successfully."
     ), 201
 
 
@@ -1262,9 +1499,15 @@ def api_stats():
     missing = need_data()
     if missing:
         return missing
-    if "stats" not in _cache:
-        _cache["stats"] = build_stats()
-    return jsonify(_cache["stats"])
+    has_filters = any(request.args.get(k) for k in ("start_date", "end_date", "min_amount", "max_amount", "min_age", "max_age"))
+    no_cache = bool(request.args.get("_t"))
+    if not has_filters and not no_cache and "stats" in _cache:
+        return jsonify(_cache["stats"])
+    filtered = _filter_df(DATA, request.args) if has_filters else DATA
+    stats = build_stats(filtered)
+    if not has_filters and not no_cache:
+        _cache["stats"] = stats
+    return jsonify(stats)
 
 
 @app.get("/api/provider-risk")
@@ -1272,9 +1515,15 @@ def api_provider_risk():
     missing = need_data()
     if missing:
         return missing
-    if "provider_risk" not in _cache:
-        _cache["provider_risk"] = build_provider_risk()
-    all_rows = _cache["provider_risk"]
+    has_filters = any(request.args.get(k) for k in ("start_date", "end_date", "min_amount", "max_amount", "min_age", "max_age"))
+    no_cache = bool(request.args.get("_t"))
+    if not has_filters and not no_cache and "provider_risk" in _cache:
+        all_rows = _cache["provider_risk"]
+    else:
+        filtered = _filter_df(DATA, request.args) if has_filters else DATA
+        all_rows = build_provider_risk(filtered)
+        if not has_filters and not no_cache:
+            _cache["provider_risk"] = all_rows
 
     trend_counts = {
         "Rising": 0,
@@ -1312,27 +1561,34 @@ def api_loss_ratio():
     missing = need_data()
     if missing:
         return missing
-    if "loss_ratio" not in _cache:
-        _cache["loss_ratio"] = build_loss_ratio()
-    return jsonify(_cache["loss_ratio"])
+    has_filters = any(request.args.get(k) for k in ("start_date", "end_date", "min_amount", "max_amount", "min_age", "max_age"))
+    no_cache = bool(request.args.get("_t"))
+    if not has_filters and not no_cache and "loss_ratio" in _cache:
+        return jsonify(_cache["loss_ratio"])
+    filtered = _filter_df(DATA, request.args) if has_filters else DATA
+    res = build_loss_ratio(filtered)
+    if not has_filters and not no_cache:
+        _cache["loss_ratio"] = res
+    return jsonify(res)
 
 
-@app.get("/api/analytics")
-def api_analytics():
-    """Monthly claim activity + Random Forest risk scores + held-out evaluation metrics."""
-    missing = need_data()
-    if missing:
-        return missing
-    if "analytics" not in _cache:
-        d = DATA.dropna(subset=["Claim_Date"])
-        g = d.groupby(d["Claim_Date"].dt.to_period("M"))["Is_Fraudulent"].agg(["size", "mean"])
-        monthly = [{"month": str(p), "claims": int(r["size"]), "fraud_rate": round(float(r["mean"]), 4)}
-                   for p, r in g.iterrows()]
+def build_analytics(df=None):
+    if df is None:
+        df = DATA
+    if len(df) == 0:
+        return {"monthly": [], "model": None}
+    d = df.dropna(subset=["Claim_Date"])
+    g = d.groupby(d["Claim_Date"].dt.to_period("M"))["Is_Fraudulent"].agg(["size", "mean"])
+    monthly = [{"month": str(p), "claims": int(r["size"]), "fraud_rate": round(float(r["mean"]), 4)}
+               for p, r in g.iterrows()]
 
-        model_info = None
-        try:
-            held = scored_data()
-            held = held[held["is_test"]]
+    model_info = None
+    try:
+        held = scored_data()
+        if len(df) != len(DATA):
+            held = held.loc[held.index.intersection(df.index)]
+        held = held[held["is_test"]]
+        if len(held) > 0:
             flagged = held["fraud_prob"] >= THRESHOLD
             actual = held["Is_Fraudulent"] == 1
             caught = int((flagged & actual).sum())
@@ -1346,10 +1602,25 @@ def api_analytics():
                 "avg_risk_score": round(float(held["fraud_prob"].mean()), 4),
                 "risk_levels": {k: int(levels.get(k, 0)) for k in ("High", "Medium", "Low")},
             }
-        except RuntimeError:           # fraud model not trained yet: still return monthly data
-            pass
-        _cache["analytics"] = {"monthly": monthly, "model": model_info}
-    return jsonify(_cache["analytics"])
+    except RuntimeError:
+        pass
+    return {"monthly": monthly, "model": model_info}
+
+
+@app.get("/api/analytics")
+def api_analytics():
+    missing = need_data()
+    if missing:
+        return missing
+    has_filters = any(request.args.get(k) for k in ("start_date", "end_date", "min_amount", "max_amount", "min_age", "max_age"))
+    no_cache = bool(request.args.get("_t"))
+    if not has_filters and not no_cache and "analytics" in _cache:
+        return jsonify(_cache["analytics"])
+    filtered = _filter_df(DATA, request.args) if has_filters else DATA
+    res = build_analytics(filtered)
+    if not has_filters and not no_cache:
+        _cache["analytics"] = res
+    return jsonify(res)
 
 
 @app.get("/api/options")
@@ -1393,7 +1664,7 @@ def api_top_claims():
         pool = pool[pool["is_test"]]
     top = pool.sort_values("fraud_prob", ascending=False).head(limit)
     rows = [{
-        "claim_id": int(r.Claim_ID),
+        "claim_id": int(r.Claim_ID) if str(r.Claim_ID).isdigit() else str(r.Claim_ID),
         "provider_type": r.Provider_Type,
         "specialty": r.Provider_Specialty,
         "service_type": r.Service_Type,

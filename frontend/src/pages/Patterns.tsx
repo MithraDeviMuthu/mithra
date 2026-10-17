@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IconCopy,
   IconChartInfographic,
@@ -8,6 +8,8 @@ import {
   IconCheck,
   IconAdjustments,
   IconFilter,
+  IconSparkles,
+  IconX,
 } from "@tabler/icons-react";
 import {
   detectDuplicates,
@@ -25,6 +27,20 @@ import { ErrorState } from "../components/ErrorState";
 
 export const Patterns: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"duplicates" | "anomalies">("duplicates");
+  const [liveRefreshToast, setLiveRefreshToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClaimSaved = (e: Event) => {
+      const customEvent = e as CustomEvent<{ claimId?: string }>;
+      const cid = customEvent.detail?.claimId || "New claim";
+      setLiveRefreshToast(`Live Update: ${cid} saved to dataset. Live database queries reflect fresh records.`);
+      setTimeout(() => setLiveRefreshToast(null), 7000);
+    };
+    window.addEventListener("claimSaved", handleClaimSaved);
+    return () => {
+      window.removeEventListener("claimSaved", handleClaimSaved);
+    };
+  }, []);
 
   // --- DUPLICATES STATE ---
   const [claimFields, setClaimFields] = useState({
@@ -342,6 +358,23 @@ export const Patterns: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Live Refresh Notification */}
+      {liveRefreshToast && (
+        <div className="p-3 rounded-lg bg-accent/15 border border-accent/40 text-accent flex items-center justify-between text-xs animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <IconSparkles size={16} className="shrink-0" />
+            <span className="font-medium">{liveRefreshToast}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLiveRefreshToast(null)}
+            className="p-1 rounded hover:bg-accent/20 text-accent"
+          >
+            <IconX size={14} />
+          </button>
+        </div>
+      )}
 
       {/* TAB 1: DUPLICATE CLAIMS DETECTION */}
       {activeTab === "duplicates" && (
