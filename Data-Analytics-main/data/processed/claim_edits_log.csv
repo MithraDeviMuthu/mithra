@@ -1,0 +1,835 @@
+time,user,row_id,field,old,new
+2026-10-17T07:39:18.419577+00:00,admin,19956,Patient_ID,None,99984398
+2026-10-17T07:39:18.420797+00:00,admin,19956,Policy_Number,None,POL-DA5794D6
+2026-10-17T07:39:18.421274+00:00,admin,19956,Claim_ID,None,20001
+2026-10-17T07:39:18.421940+00:00,admin,19956,Claim_Date,None,2026-10-17 00:00:00
+2026-10-17T07:39:18.422661+00:00,admin,19956,Service_Date,None,2026-10-17 00:00:00
+2026-10-17T07:39:18.423513+00:00,admin,19956,Policy_Expiration_Date,None,2026-12-31 00:00:00
+2026-10-17T07:39:18.424310+00:00,admin,19956,Claim_Amount,None,15000.0
+2026-10-17T07:39:18.424792+00:00,admin,19956,Patient_Age,None,52
+2026-10-17T07:39:18.425603+00:00,admin,19956,Patient_Gender,None,Female
+2026-10-17T07:39:18.426153+00:00,admin,19956,Patient_City,None,Dallas
+2026-10-17T07:39:18.426793+00:00,admin,19956,Patient_State,None,TX
+2026-10-17T07:39:18.427675+00:00,admin,19956,Hospital_ID,None,101
+2026-10-17T07:39:18.428179+00:00,admin,19956,Provider_Type,None,Hospital
+2026-10-17T07:39:18.428555+00:00,admin,19956,Provider_Specialty,None,Cardiology
+2026-10-17T07:39:18.428943+00:00,admin,19956,Provider_City,None,Dallas
+2026-10-17T07:39:18.429518+00:00,admin,19956,Provider_State,None,TX
+2026-10-17T07:39:18.430228+00:00,admin,19956,Diagnosis_Code,None,I10
+2026-10-17T07:39:18.430763+00:00,admin,19956,Procedure_Code,None,99213
+2026-10-17T07:39:18.431168+00:00,admin,19956,Number_of_Procedures,None,1
+2026-10-17T07:39:18.431522+00:00,admin,19956,Admission_Type,None,Emergency
+2026-10-17T07:39:18.431888+00:00,admin,19956,Discharge_Type,None,Home
+2026-10-17T07:39:18.432296+00:00,admin,19956,Length_of_Stay_Days,None,3
+2026-10-17T07:39:18.432780+00:00,admin,19956,Service_Type,None,Inpatient
+2026-10-17T07:39:18.433469+00:00,admin,19956,Deductible_Amount,None,1000.0
+2026-10-17T07:39:18.433929+00:00,admin,19956,CoPay_Amount,None,50.0
+2026-10-17T07:39:18.434309+00:00,admin,19956,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T07:39:18.434684+00:00,admin,19956,Number_of_Previous_Claims_Provider,None,5
+2026-10-17T07:39:18.435250+00:00,admin,19956,Provider_Patient_Distance_Miles,None,15.0
+2026-10-17T07:39:18.435708+00:00,admin,19956,Claim_Submitted_Late,None,False
+2026-10-17T07:39:18.436032+00:00,admin,19956,Is_Fraudulent,None,0
+2026-10-17T07:39:18.436337+00:00,admin,19956,Policy_Start_Date,None,2023-01-01 00:00:00
+2026-10-17T07:39:18.436634+00:00,admin,19956,Policy_Type,None,Standard
+2026-10-17T07:39:18.437115+00:00,admin,19956,Patient_Income_Bracket,None,Medium
+2026-10-17T07:39:18.437601+00:00,admin,19956,Network_Provider,None,in-network
+2026-10-17T07:39:18.438137+00:00,admin,19956,Premium_Amount,None,500.0
+2026-10-17T07:39:18.438653+00:00,admin,19956,Claim_Status,None,Approved
+2026-10-17T07:39:18.439193+00:00,admin,19956,Processing_Days,None,14
+2026-10-17T07:44:50.397375+00:00,admin,19957,Patient_ID,None,99984399
+2026-10-17T07:44:50.399512+00:00,admin,19957,Policy_Number,None,POL-56B7548E
+2026-10-17T07:44:50.401325+00:00,admin,19957,Claim_ID,None,20002
+2026-10-17T07:44:50.403103+00:00,admin,19957,Claim_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:50.405499+00:00,admin,19957,Service_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:50.407239+00:00,admin,19957,Policy_Expiration_Date,None,2026-12-31 00:00:00
+2026-10-17T07:44:50.409067+00:00,admin,19957,Claim_Amount,None,42000.5
+2026-10-17T07:44:50.410992+00:00,admin,19957,Patient_Age,None,64
+2026-10-17T07:44:50.413302+00:00,admin,19957,Patient_Gender,None,Male
+2026-10-17T07:44:50.415232+00:00,admin,19957,Patient_City,None,Dallas
+2026-10-17T07:44:50.417543+00:00,admin,19957,Patient_State,None,TX
+2026-10-17T07:44:50.419868+00:00,admin,19957,Hospital_ID,None,202
+2026-10-17T07:44:50.422667+00:00,admin,19957,Provider_Type,None,Hospital
+2026-10-17T07:44:50.425861+00:00,admin,19957,Provider_Specialty,None,Neurology
+2026-10-17T07:44:50.428624+00:00,admin,19957,Provider_City,None,Dallas
+2026-10-17T07:44:50.430708+00:00,admin,19957,Provider_State,None,TX
+2026-10-17T07:44:50.433386+00:00,admin,19957,Diagnosis_Code,None,I10
+2026-10-17T07:44:50.435392+00:00,admin,19957,Procedure_Code,None,99213
+2026-10-17T07:44:50.437459+00:00,admin,19957,Number_of_Procedures,None,1
+2026-10-17T07:44:50.440501+00:00,admin,19957,Admission_Type,None,Emergency
+2026-10-17T07:44:50.442628+00:00,admin,19957,Discharge_Type,None,Home
+2026-10-17T07:44:50.444770+00:00,admin,19957,Length_of_Stay_Days,None,5
+2026-10-17T07:44:50.446422+00:00,admin,19957,Service_Type,None,Inpatient
+2026-10-17T07:44:50.450152+00:00,admin,19957,Deductible_Amount,None,1000.0
+2026-10-17T07:44:50.452835+00:00,admin,19957,CoPay_Amount,None,50.0
+2026-10-17T07:44:50.455136+00:00,admin,19957,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T07:44:50.456795+00:00,admin,19957,Number_of_Previous_Claims_Provider,None,5
+2026-10-17T07:44:50.457264+00:00,admin,19957,Provider_Patient_Distance_Miles,None,15.0
+2026-10-17T07:44:50.458273+00:00,admin,19957,Claim_Submitted_Late,None,False
+2026-10-17T07:44:50.459858+00:00,admin,19957,Is_Fraudulent,None,0
+2026-10-17T07:44:50.462185+00:00,admin,19957,Policy_Start_Date,None,2023-01-01 00:00:00
+2026-10-17T07:44:50.464047+00:00,admin,19957,Policy_Type,None,Standard
+2026-10-17T07:44:50.465812+00:00,admin,19957,Patient_Income_Bracket,None,Medium
+2026-10-17T07:44:50.466298+00:00,admin,19957,Network_Provider,None,in-network
+2026-10-17T07:44:50.466687+00:00,admin,19957,Premium_Amount,None,500.0
+2026-10-17T07:44:50.467682+00:00,admin,19957,Claim_Status,None,Approved
+2026-10-17T07:44:50.469048+00:00,admin,19957,Processing_Days,None,14
+2026-10-17T07:44:51.781824+00:00,admin,19958,Patient_ID,None,99984400
+2026-10-17T07:44:51.782597+00:00,admin,19958,Policy_Number,None,POL-D7776C26
+2026-10-17T07:44:51.783851+00:00,admin,19958,Claim_ID,None,20003
+2026-10-17T07:44:51.784551+00:00,admin,19958,Claim_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:51.785323+00:00,admin,19958,Service_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:51.785993+00:00,admin,19958,Policy_Expiration_Date,None,2026-12-31 00:00:00
+2026-10-17T07:44:51.786640+00:00,admin,19958,Claim_Amount,None,1000.0
+2026-10-17T07:44:51.787825+00:00,admin,19958,Patient_Age,None,31
+2026-10-17T07:44:51.788610+00:00,admin,19958,Patient_Gender,None,Female
+2026-10-17T07:44:51.789200+00:00,admin,19958,Patient_City,None,Dallas
+2026-10-17T07:44:51.789720+00:00,admin,19958,Patient_State,None,TX
+2026-10-17T07:44:51.790264+00:00,admin,19958,Hospital_ID,None,101
+2026-10-17T07:44:51.790773+00:00,admin,19958,Provider_Type,None,Clinic
+2026-10-17T07:44:51.791283+00:00,admin,19958,Provider_Specialty,None,General
+2026-10-17T07:44:51.791805+00:00,admin,19958,Provider_City,None,Dallas
+2026-10-17T07:44:51.792418+00:00,admin,19958,Provider_State,None,TX
+2026-10-17T07:44:51.792914+00:00,admin,19958,Diagnosis_Code,None,A09
+2026-10-17T07:44:51.793435+00:00,admin,19958,Procedure_Code,None,99203
+2026-10-17T07:44:51.795315+00:00,admin,19958,Number_of_Procedures,None,1
+2026-10-17T07:44:51.796085+00:00,admin,19958,Admission_Type,None,Emergency
+2026-10-17T07:44:51.796735+00:00,admin,19958,Discharge_Type,None,Home
+2026-10-17T07:44:51.797193+00:00,admin,19958,Length_of_Stay_Days,None,1
+2026-10-17T07:44:51.797662+00:00,admin,19958,Service_Type,None,Outpatient
+2026-10-17T07:44:51.798068+00:00,admin,19958,Deductible_Amount,None,1000.0
+2026-10-17T07:44:51.798462+00:00,admin,19958,CoPay_Amount,None,50.0
+2026-10-17T07:44:51.798872+00:00,admin,19958,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T07:44:51.799219+00:00,admin,19958,Number_of_Previous_Claims_Provider,None,5
+2026-10-17T07:44:51.799579+00:00,admin,19958,Provider_Patient_Distance_Miles,None,15.0
+2026-10-17T07:44:51.800125+00:00,admin,19958,Claim_Submitted_Late,None,False
+2026-10-17T07:44:51.800769+00:00,admin,19958,Is_Fraudulent,None,0
+2026-10-17T07:44:51.801515+00:00,admin,19958,Policy_Start_Date,None,2023-01-01 00:00:00
+2026-10-17T07:44:51.802231+00:00,admin,19958,Policy_Type,None,Standard
+2026-10-17T07:44:51.802936+00:00,admin,19958,Patient_Income_Bracket,None,Medium
+2026-10-17T07:44:51.803467+00:00,admin,19958,Network_Provider,None,in-network
+2026-10-17T07:44:51.804059+00:00,admin,19958,Premium_Amount,None,500.0
+2026-10-17T07:44:51.804539+00:00,admin,19958,Claim_Status,None,Approved
+2026-10-17T07:44:51.805012+00:00,admin,19958,Processing_Days,None,14
+2026-10-17T07:44:52.141988+00:00,admin,19959,Patient_ID,None,99984401
+2026-10-17T07:44:52.143660+00:00,admin,19959,Policy_Number,None,POL-05707F59
+2026-10-17T07:44:52.144498+00:00,admin,19959,Claim_ID,None,20004
+2026-10-17T07:44:52.145172+00:00,admin,19959,Claim_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:52.145854+00:00,admin,19959,Service_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:52.146530+00:00,admin,19959,Policy_Expiration_Date,None,2026-12-31 00:00:00
+2026-10-17T07:44:52.147329+00:00,admin,19959,Claim_Amount,None,4000.0
+2026-10-17T07:44:52.149170+00:00,admin,19959,Patient_Age,None,34
+2026-10-17T07:44:52.150073+00:00,admin,19959,Patient_Gender,None,Female
+2026-10-17T07:44:52.150766+00:00,admin,19959,Patient_City,None,Dallas
+2026-10-17T07:44:52.151854+00:00,admin,19959,Patient_State,None,TX
+2026-10-17T07:44:52.153101+00:00,admin,19959,Hospital_ID,None,104
+2026-10-17T07:44:52.154546+00:00,admin,19959,Provider_Type,None,Clinic
+2026-10-17T07:44:52.155978+00:00,admin,19959,Provider_Specialty,None,General
+2026-10-17T07:44:52.156848+00:00,admin,19959,Provider_City,None,Dallas
+2026-10-17T07:44:52.157821+00:00,admin,19959,Provider_State,None,TX
+2026-10-17T07:44:52.158312+00:00,admin,19959,Diagnosis_Code,None,A09
+2026-10-17T07:44:52.158828+00:00,admin,19959,Procedure_Code,None,99203
+2026-10-17T07:44:52.159304+00:00,admin,19959,Number_of_Procedures,None,1
+2026-10-17T07:44:52.159887+00:00,admin,19959,Admission_Type,None,Emergency
+2026-10-17T07:44:52.161018+00:00,admin,19959,Discharge_Type,None,Home
+2026-10-17T07:44:52.162492+00:00,admin,19959,Length_of_Stay_Days,None,1
+2026-10-17T07:44:52.163453+00:00,admin,19959,Service_Type,None,Outpatient
+2026-10-17T07:44:52.164201+00:00,admin,19959,Deductible_Amount,None,1000.0
+2026-10-17T07:44:52.164953+00:00,admin,19959,CoPay_Amount,None,50.0
+2026-10-17T07:44:52.165453+00:00,admin,19959,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T07:44:52.165997+00:00,admin,19959,Number_of_Previous_Claims_Provider,None,5
+2026-10-17T07:44:52.167060+00:00,admin,19959,Provider_Patient_Distance_Miles,None,15.0
+2026-10-17T07:44:52.168231+00:00,admin,19959,Claim_Submitted_Late,None,False
+2026-10-17T07:44:52.169004+00:00,admin,19959,Is_Fraudulent,None,0
+2026-10-17T07:44:52.170016+00:00,admin,19959,Policy_Start_Date,None,2023-01-01 00:00:00
+2026-10-17T07:44:52.170716+00:00,admin,19959,Policy_Type,None,Standard
+2026-10-17T07:44:52.171313+00:00,admin,19959,Patient_Income_Bracket,None,Medium
+2026-10-17T07:44:52.171843+00:00,admin,19959,Network_Provider,None,in-network
+2026-10-17T07:44:52.172407+00:00,admin,19959,Premium_Amount,None,500.0
+2026-10-17T07:44:52.172989+00:00,admin,19959,Claim_Status,None,Approved
+2026-10-17T07:44:52.173607+00:00,admin,19959,Processing_Days,None,14
+2026-10-17T07:44:52.476345+00:00,admin,19960,Patient_ID,None,99984402
+2026-10-17T07:44:52.477306+00:00,admin,19960,Policy_Number,None,POL-24A16035
+2026-10-17T07:44:52.478086+00:00,admin,19960,Claim_ID,None,20005
+2026-10-17T07:44:52.479173+00:00,admin,19960,Claim_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:52.479947+00:00,admin,19960,Service_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:52.480769+00:00,admin,19960,Policy_Expiration_Date,None,2026-12-31 00:00:00
+2026-10-17T07:44:52.482292+00:00,admin,19960,Claim_Amount,None,5000.0
+2026-10-17T07:44:52.483152+00:00,admin,19960,Patient_Age,None,35
+2026-10-17T07:44:52.483961+00:00,admin,19960,Patient_Gender,None,Female
+2026-10-17T07:44:52.484591+00:00,admin,19960,Patient_City,None,Dallas
+2026-10-17T07:44:52.485177+00:00,admin,19960,Patient_State,None,TX
+2026-10-17T07:44:52.485752+00:00,admin,19960,Hospital_ID,None,105
+2026-10-17T07:44:52.486239+00:00,admin,19960,Provider_Type,None,Clinic
+2026-10-17T07:44:52.486737+00:00,admin,19960,Provider_Specialty,None,General
+2026-10-17T07:44:52.487321+00:00,admin,19960,Provider_City,None,Dallas
+2026-10-17T07:44:52.488999+00:00,admin,19960,Provider_State,None,TX
+2026-10-17T07:44:52.489949+00:00,admin,19960,Diagnosis_Code,None,A09
+2026-10-17T07:44:52.490637+00:00,admin,19960,Procedure_Code,None,99203
+2026-10-17T07:44:52.491211+00:00,admin,19960,Number_of_Procedures,None,1
+2026-10-17T07:44:52.491779+00:00,admin,19960,Admission_Type,None,Emergency
+2026-10-17T07:44:52.492507+00:00,admin,19960,Discharge_Type,None,Home
+2026-10-17T07:44:52.493140+00:00,admin,19960,Length_of_Stay_Days,None,1
+2026-10-17T07:44:52.493608+00:00,admin,19960,Service_Type,None,Outpatient
+2026-10-17T07:44:52.494256+00:00,admin,19960,Deductible_Amount,None,1000.0
+2026-10-17T07:44:52.495273+00:00,admin,19960,CoPay_Amount,None,50.0
+2026-10-17T07:44:52.496277+00:00,admin,19960,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T07:44:52.496892+00:00,admin,19960,Number_of_Previous_Claims_Provider,None,5
+2026-10-17T07:44:52.497672+00:00,admin,19960,Provider_Patient_Distance_Miles,None,15.0
+2026-10-17T07:44:52.498106+00:00,admin,19960,Claim_Submitted_Late,None,False
+2026-10-17T07:44:52.498553+00:00,admin,19960,Is_Fraudulent,None,0
+2026-10-17T07:44:52.499035+00:00,admin,19960,Policy_Start_Date,None,2023-01-01 00:00:00
+2026-10-17T07:44:52.499421+00:00,admin,19960,Policy_Type,None,Standard
+2026-10-17T07:44:52.499861+00:00,admin,19960,Patient_Income_Bracket,None,Medium
+2026-10-17T07:44:52.500292+00:00,admin,19960,Network_Provider,None,in-network
+2026-10-17T07:44:52.500708+00:00,admin,19960,Premium_Amount,None,500.0
+2026-10-17T07:44:52.501314+00:00,admin,19960,Claim_Status,None,Approved
+2026-10-17T07:44:52.501890+00:00,admin,19960,Processing_Days,None,14
+2026-10-17T07:44:52.820162+00:00,admin,19961,Patient_ID,None,99984403
+2026-10-17T07:44:52.820917+00:00,admin,19961,Policy_Number,None,POL-D33A6C75
+2026-10-17T07:44:52.822297+00:00,admin,19961,Claim_ID,None,20006
+2026-10-17T07:44:52.823276+00:00,admin,19961,Claim_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:52.823968+00:00,admin,19961,Service_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:52.824547+00:00,admin,19961,Policy_Expiration_Date,None,2026-12-31 00:00:00
+2026-10-17T07:44:52.825495+00:00,admin,19961,Claim_Amount,None,3000.0
+2026-10-17T07:44:52.825987+00:00,admin,19961,Patient_Age,None,33
+2026-10-17T07:44:52.826945+00:00,admin,19961,Patient_Gender,None,Female
+2026-10-17T07:44:52.828135+00:00,admin,19961,Patient_City,None,Dallas
+2026-10-17T07:44:52.829440+00:00,admin,19961,Patient_State,None,TX
+2026-10-17T07:44:52.830276+00:00,admin,19961,Hospital_ID,None,103
+2026-10-17T07:44:52.831143+00:00,admin,19961,Provider_Type,None,Clinic
+2026-10-17T07:44:52.831816+00:00,admin,19961,Provider_Specialty,None,General
+2026-10-17T07:44:52.832289+00:00,admin,19961,Provider_City,None,Dallas
+2026-10-17T07:44:52.832761+00:00,admin,19961,Provider_State,None,TX
+2026-10-17T07:44:52.833493+00:00,admin,19961,Diagnosis_Code,None,A09
+2026-10-17T07:44:52.834473+00:00,admin,19961,Procedure_Code,None,99203
+2026-10-17T07:44:52.835093+00:00,admin,19961,Number_of_Procedures,None,1
+2026-10-17T07:44:52.836559+00:00,admin,19961,Admission_Type,None,Emergency
+2026-10-17T07:44:52.837347+00:00,admin,19961,Discharge_Type,None,Home
+2026-10-17T07:44:52.838129+00:00,admin,19961,Length_of_Stay_Days,None,1
+2026-10-17T07:44:52.839046+00:00,admin,19961,Service_Type,None,Outpatient
+2026-10-17T07:44:52.839688+00:00,admin,19961,Deductible_Amount,None,1000.0
+2026-10-17T07:44:52.840221+00:00,admin,19961,CoPay_Amount,None,50.0
+2026-10-17T07:44:52.840797+00:00,admin,19961,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T07:44:52.841312+00:00,admin,19961,Number_of_Previous_Claims_Provider,None,5
+2026-10-17T07:44:52.841742+00:00,admin,19961,Provider_Patient_Distance_Miles,None,15.0
+2026-10-17T07:44:52.842439+00:00,admin,19961,Claim_Submitted_Late,None,False
+2026-10-17T07:44:52.843867+00:00,admin,19961,Is_Fraudulent,None,0
+2026-10-17T07:44:52.844571+00:00,admin,19961,Policy_Start_Date,None,2023-01-01 00:00:00
+2026-10-17T07:44:52.845228+00:00,admin,19961,Policy_Type,None,Standard
+2026-10-17T07:44:52.845859+00:00,admin,19961,Patient_Income_Bracket,None,Medium
+2026-10-17T07:44:52.846450+00:00,admin,19961,Network_Provider,None,in-network
+2026-10-17T07:44:52.847052+00:00,admin,19961,Premium_Amount,None,500.0
+2026-10-17T07:44:52.847551+00:00,admin,19961,Claim_Status,None,Approved
+2026-10-17T07:44:52.848460+00:00,admin,19961,Processing_Days,None,14
+2026-10-17T07:44:53.123509+00:00,admin,19962,Patient_ID,None,99984404
+2026-10-17T07:44:53.124173+00:00,admin,19962,Policy_Number,None,POL-AC3D9FFF
+2026-10-17T07:44:53.124748+00:00,admin,19962,Claim_ID,None,20007
+2026-10-17T07:44:53.125241+00:00,admin,19962,Claim_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:53.125826+00:00,admin,19962,Service_Date,None,2026-10-17 00:00:00
+2026-10-17T07:44:53.127393+00:00,admin,19962,Policy_Expiration_Date,None,2026-12-31 00:00:00
+2026-10-17T07:44:53.128314+00:00,admin,19962,Claim_Amount,None,2000.0
+2026-10-17T07:44:53.129043+00:00,admin,19962,Patient_Age,None,32
+2026-10-17T07:44:53.129628+00:00,admin,19962,Patient_Gender,None,Female
+2026-10-17T07:44:53.130256+00:00,admin,19962,Patient_City,None,Dallas
+2026-10-17T07:44:53.130835+00:00,admin,19962,Patient_State,None,TX
+2026-10-17T07:44:53.131406+00:00,admin,19962,Hospital_ID,None,102
+2026-10-17T07:44:53.131959+00:00,admin,19962,Provider_Type,None,Clinic
+2026-10-17T07:44:53.132458+00:00,admin,19962,Provider_Specialty,None,General
+2026-10-17T07:44:53.132904+00:00,admin,19962,Provider_City,None,Dallas
+2026-10-17T07:44:53.133335+00:00,admin,19962,Provider_State,None,TX
+2026-10-17T07:44:53.133929+00:00,admin,19962,Diagnosis_Code,None,A09
+2026-10-17T07:44:53.135149+00:00,admin,19962,Procedure_Code,None,99203
+2026-10-17T07:44:53.135846+00:00,admin,19962,Number_of_Procedures,None,1
+2026-10-17T07:44:53.136838+00:00,admin,19962,Admission_Type,None,Emergency
+2026-10-17T07:44:53.137389+00:00,admin,19962,Discharge_Type,None,Home
+2026-10-17T07:44:53.137891+00:00,admin,19962,Length_of_Stay_Days,None,1
+2026-10-17T07:44:53.138326+00:00,admin,19962,Service_Type,None,Outpatient
+2026-10-17T07:44:53.138856+00:00,admin,19962,Deductible_Amount,None,1000.0
+2026-10-17T07:44:53.140063+00:00,admin,19962,CoPay_Amount,None,50.0
+2026-10-17T07:44:53.140658+00:00,admin,19962,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T07:44:53.141525+00:00,admin,19962,Number_of_Previous_Claims_Provider,None,5
+2026-10-17T07:44:53.142290+00:00,admin,19962,Provider_Patient_Distance_Miles,None,15.0
+2026-10-17T07:44:53.142994+00:00,admin,19962,Claim_Submitted_Late,None,False
+2026-10-17T07:44:53.143919+00:00,admin,19962,Is_Fraudulent,None,0
+2026-10-17T07:44:53.144376+00:00,admin,19962,Policy_Start_Date,None,2023-01-01 00:00:00
+2026-10-17T07:44:53.144803+00:00,admin,19962,Policy_Type,None,Standard
+2026-10-17T07:44:53.145251+00:00,admin,19962,Patient_Income_Bracket,None,Medium
+2026-10-17T07:44:53.145964+00:00,admin,19962,Network_Provider,None,in-network
+2026-10-17T07:44:53.146362+00:00,admin,19962,Premium_Amount,None,500.0
+2026-10-17T07:44:53.146852+00:00,admin,19962,Claim_Status,None,Approved
+2026-10-17T07:44:53.147635+00:00,admin,19962,Processing_Days,None,14
+2026-10-17T07:51:10.376306+00:00,admin,19956,Patient_ID,None,54123
+2026-10-17T07:51:10.376306+00:00,admin,19956,Policy_Number,None,POL-657830
+2026-10-17T07:51:10.383637+00:00,admin,19956,Claim_ID,None,20001
+2026-10-17T07:51:10.383637+00:00,admin,19956,Claim_Date,None,2024-06-01 00:00:00
+2026-10-17T07:51:10.391444+00:00,admin,19956,Service_Date,None,2024-09-29 00:00:00
+2026-10-17T07:51:10.396494+00:00,admin,19956,Policy_Expiration_Date,None,2026-10-13 00:00:00
+2026-10-17T07:51:10.397443+00:00,admin,19956,Claim_Amount,None,50000.0
+2026-10-17T07:51:10.397443+00:00,admin,19956,Patient_Age,None,41
+2026-10-17T07:51:10.404224+00:00,admin,19956,Patient_Gender,None,Female
+2026-10-17T07:51:10.404224+00:00,admin,19956,Patient_City,None,Chicago
+2026-10-17T07:51:10.411186+00:00,admin,19956,Patient_State,None,FL
+2026-10-17T07:51:10.411186+00:00,admin,19956,Hospital_ID,None,50
+2026-10-17T07:51:10.411186+00:00,admin,19956,Provider_Type,None,Hospital
+2026-10-17T07:51:10.418255+00:00,admin,19956,Provider_Specialty,None,Internal Medicine
+2026-10-17T07:51:10.418255+00:00,admin,19956,Provider_City,None,San Diego
+2026-10-17T07:51:10.418255+00:00,admin,19956,Provider_State,None,WA
+2026-10-17T07:51:10.424023+00:00,admin,19956,Diagnosis_Code,None,H25.9
+2026-10-17T07:51:10.425093+00:00,admin,19956,Procedure_Code,None,7104
+2026-10-17T07:51:10.425093+00:00,admin,19956,Number_of_Procedures,None,2
+2026-10-17T07:51:10.425093+00:00,admin,19956,Admission_Type,None,Elective
+2026-10-17T07:51:10.430951+00:00,admin,19956,Discharge_Type,None,Home
+2026-10-17T07:51:10.432077+00:00,admin,19956,Length_of_Stay_Days,None,5
+2026-10-17T07:51:10.432077+00:00,admin,19956,Service_Type,None,Inpatient
+2026-10-17T07:51:10.432077+00:00,admin,19956,Deductible_Amount,None,4963.79
+2026-10-17T07:51:10.438857+00:00,admin,19956,CoPay_Amount,None,57.99
+2026-10-17T07:51:10.438857+00:00,admin,19956,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T07:51:10.438857+00:00,admin,19956,Number_of_Previous_Claims_Provider,None,6
+2026-10-17T07:51:10.444865+00:00,admin,19956,Provider_Patient_Distance_Miles,None,6.0
+2026-10-17T07:51:10.445752+00:00,admin,19956,Claim_Submitted_Late,None,False
+2026-10-17T07:51:10.445752+00:00,admin,19956,Is_Fraudulent,None,0
+2026-10-17T07:51:10.445752+00:00,admin,19956,Policy_Start_Date,None,2024-10-30 00:00:00
+2026-10-17T07:51:10.451712+00:00,admin,19956,Policy_Type,None,Basic
+2026-10-17T07:51:10.452551+00:00,admin,19956,Patient_Income_Bracket,None,Medium
+2026-10-17T07:51:10.452551+00:00,admin,19956,Network_Provider,None,in-network
+2026-10-17T07:51:10.452551+00:00,admin,19956,Premium_Amount,None,8263.16
+2026-10-17T07:51:10.452551+00:00,admin,19956,Claim_Status,None,Approved
+2026-10-17T07:51:10.459671+00:00,admin,19956,Processing_Days,None,14
+2026-10-17T07:52:02.188951+00:00,admin,19957,Patient_ID,None,54123
+2026-10-17T07:52:02.194453+00:00,admin,19957,Policy_Number,None,POL-657830
+2026-10-17T07:52:02.194453+00:00,admin,19957,Claim_ID,None,20002
+2026-10-17T07:52:02.201057+00:00,admin,19957,Claim_Date,None,2024-06-01 00:00:00
+2026-10-17T07:52:02.207585+00:00,admin,19957,Service_Date,None,2024-09-29 00:00:00
+2026-10-17T07:52:02.208225+00:00,admin,19957,Policy_Expiration_Date,None,2026-10-13 00:00:00
+2026-10-17T07:52:02.214507+00:00,admin,19957,Claim_Amount,None,50000.0
+2026-10-17T07:52:02.215571+00:00,admin,19957,Patient_Age,None,41
+2026-10-17T07:52:02.215571+00:00,admin,19957,Patient_Gender,None,Female
+2026-10-17T07:52:02.221386+00:00,admin,19957,Patient_City,None,Chicago
+2026-10-17T07:52:02.222091+00:00,admin,19957,Patient_State,None,FL
+2026-10-17T07:52:02.222091+00:00,admin,19957,Hospital_ID,None,50
+2026-10-17T07:52:02.222091+00:00,admin,19957,Provider_Type,None,Hospital
+2026-10-17T07:52:02.229571+00:00,admin,19957,Provider_Specialty,None,Dermatology
+2026-10-17T07:52:02.235765+00:00,admin,19957,Provider_City,None,San Diego
+2026-10-17T07:52:02.235765+00:00,admin,19957,Provider_State,None,WA
+2026-10-17T07:52:02.242198+00:00,admin,19957,Diagnosis_Code,None,H25.9
+2026-10-17T07:52:02.242858+00:00,admin,19957,Procedure_Code,None,7104
+2026-10-17T07:52:02.242858+00:00,admin,19957,Number_of_Procedures,None,2
+2026-10-17T07:52:02.249696+00:00,admin,19957,Admission_Type,None,Emergency
+2026-10-17T07:52:02.249696+00:00,admin,19957,Discharge_Type,None,Home
+2026-10-17T07:52:02.249696+00:00,admin,19957,Length_of_Stay_Days,None,5
+2026-10-17T07:52:02.257036+00:00,admin,19957,Service_Type,None,Inpatient
+2026-10-17T07:52:02.257036+00:00,admin,19957,Deductible_Amount,None,4963.79
+2026-10-17T07:52:02.262996+00:00,admin,19957,CoPay_Amount,None,57.99
+2026-10-17T07:52:02.263486+00:00,admin,19957,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T07:52:02.263486+00:00,admin,19957,Number_of_Previous_Claims_Provider,None,6
+2026-10-17T07:52:02.263486+00:00,admin,19957,Provider_Patient_Distance_Miles,None,6.0
+2026-10-17T07:52:02.269950+00:00,admin,19957,Claim_Submitted_Late,None,False
+2026-10-17T07:52:02.269950+00:00,admin,19957,Is_Fraudulent,None,0
+2026-10-17T07:52:02.269950+00:00,admin,19957,Policy_Start_Date,None,2024-10-30 00:00:00
+2026-10-17T07:52:02.277450+00:00,admin,19957,Policy_Type,None,Basic
+2026-10-17T07:52:02.284634+00:00,admin,19957,Patient_Income_Bracket,None,Medium
+2026-10-17T07:52:02.284634+00:00,admin,19957,Network_Provider,None,in-network
+2026-10-17T07:52:02.284634+00:00,admin,19957,Premium_Amount,None,8263.16
+2026-10-17T07:52:02.291236+00:00,admin,19957,Claim_Status,None,Approved
+2026-10-17T07:52:02.291236+00:00,admin,19957,Processing_Days,None,14
+2026-10-17T07:53:06.436472+00:00,admin,19958,Patient_ID,None,54123
+2026-10-17T07:53:06.436472+00:00,admin,19958,Policy_Number,None,POL-657830
+2026-10-17T07:53:06.442930+00:00,admin,19958,Claim_ID,None,20003
+2026-10-17T07:53:06.449972+00:00,admin,19958,Claim_Date,None,2024-06-01 00:00:00
+2026-10-17T07:53:06.456825+00:00,admin,19958,Service_Date,None,2024-09-29 00:00:00
+2026-10-17T07:53:06.463713+00:00,admin,19958,Policy_Expiration_Date,None,2026-10-13 00:00:00
+2026-10-17T07:53:06.463713+00:00,admin,19958,Claim_Amount,None,50000.0
+2026-10-17T07:53:06.470592+00:00,admin,19958,Patient_Age,None,41
+2026-10-17T07:53:06.477359+00:00,admin,19958,Patient_Gender,None,Female
+2026-10-17T07:53:06.477359+00:00,admin,19958,Patient_City,None,Chicago
+2026-10-17T07:53:06.484546+00:00,admin,19958,Patient_State,None,FL
+2026-10-17T07:53:06.491532+00:00,admin,19958,Hospital_ID,None,50
+2026-10-17T07:53:06.491532+00:00,admin,19958,Provider_Type,None,Hospital
+2026-10-17T07:53:06.499168+00:00,admin,19958,Provider_Specialty,None,Dermatology
+2026-10-17T07:53:06.499168+00:00,admin,19958,Provider_City,None,San Diego
+2026-10-17T07:53:06.505214+00:00,admin,19958,Provider_State,None,WA
+2026-10-17T07:53:06.505214+00:00,admin,19958,Diagnosis_Code,None,H25.9
+2026-10-17T07:53:06.505214+00:00,admin,19958,Procedure_Code,None,7104
+2026-10-17T07:53:06.512040+00:00,admin,19958,Number_of_Procedures,None,2
+2026-10-17T07:53:06.515048+00:00,admin,19958,Admission_Type,None,Emergency
+2026-10-17T07:53:06.516063+00:00,admin,19958,Discharge_Type,None,Home
+2026-10-17T07:53:06.518895+00:00,admin,19958,Length_of_Stay_Days,None,5
+2026-10-17T07:53:06.520434+00:00,admin,19958,Service_Type,None,Inpatient
+2026-10-17T07:53:06.526129+00:00,admin,19958,Deductible_Amount,None,4963.79
+2026-10-17T07:53:06.526129+00:00,admin,19958,CoPay_Amount,None,57.99
+2026-10-17T07:53:06.533012+00:00,admin,19958,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T07:53:06.533012+00:00,admin,19958,Number_of_Previous_Claims_Provider,None,6
+2026-10-17T07:53:06.533012+00:00,admin,19958,Provider_Patient_Distance_Miles,None,6.0
+2026-10-17T07:53:06.540065+00:00,admin,19958,Claim_Submitted_Late,None,False
+2026-10-17T07:53:06.540065+00:00,admin,19958,Is_Fraudulent,None,0
+2026-10-17T07:53:06.540065+00:00,admin,19958,Policy_Start_Date,None,2024-10-30 00:00:00
+2026-10-17T07:53:06.546996+00:00,admin,19958,Policy_Type,None,Basic
+2026-10-17T07:53:06.546996+00:00,admin,19958,Patient_Income_Bracket,None,Medium
+2026-10-17T07:53:06.553997+00:00,admin,19958,Network_Provider,None,in-network
+2026-10-17T07:53:06.553997+00:00,admin,19958,Premium_Amount,None,8263.16
+2026-10-17T07:53:06.553997+00:00,admin,19958,Claim_Status,None,Approved
+2026-10-17T07:53:06.560275+00:00,admin,19958,Processing_Days,None,14
+2026-10-17T08:08:05.603386+00:00,admin,19959,Patient_ID,None,P5001
+2026-10-17T08:08:05.603386+00:00,admin,19959,Policy_Number,None,POL-9931
+2026-10-17T08:08:05.603386+00:00,admin,19959,Claim_ID,None,20010
+2026-10-17T08:08:05.603386+00:00,admin,19959,Claim_Date,None,2024-06-01 00:00:00
+2026-10-17T08:08:05.609613+00:00,admin,19959,Service_Date,None,2025-01-08 00:00:00
+2026-10-17T08:08:05.609613+00:00,admin,19959,Policy_Expiration_Date,None,2029-02-13 00:00:00
+2026-10-17T08:08:05.609613+00:00,admin,19959,Claim_Amount,None,75000.0
+2026-10-17T08:08:05.609613+00:00,admin,19959,Patient_Age,None,45
+2026-10-17T08:08:05.609613+00:00,admin,19959,Patient_Gender,None,Female
+2026-10-17T08:08:05.609613+00:00,admin,19959,Patient_City,None,Dallas
+2026-10-17T08:08:05.616852+00:00,admin,19959,Patient_State,None,FL
+2026-10-17T08:08:05.619561+00:00,admin,19959,Hospital_ID,None,TX
+2026-10-17T08:08:05.619561+00:00,admin,19959,Provider_Type,None,Hospital
+2026-10-17T08:08:05.624165+00:00,admin,19959,Provider_Specialty,None,General Practice
+2026-10-17T08:08:05.624165+00:00,admin,19959,Provider_City,None,San Diego
+2026-10-17T08:08:05.624165+00:00,admin,19959,Provider_State,None,WA
+2026-10-17T08:08:05.630408+00:00,admin,19959,Diagnosis_Code,None,H25.9
+2026-10-17T08:08:05.630408+00:00,admin,19959,Procedure_Code,None,7104
+2026-10-17T08:08:05.630408+00:00,admin,19959,Number_of_Procedures,None,2
+2026-10-17T08:08:05.630408+00:00,admin,19959,Admission_Type,None,Emergency
+2026-10-17T08:08:05.637636+00:00,admin,19959,Discharge_Type,None,Deceased
+2026-10-17T08:08:05.637636+00:00,admin,19959,Length_of_Stay_Days,None,5
+2026-10-17T08:08:05.637636+00:00,admin,19959,Service_Type,None,Laboratory
+2026-10-17T08:08:05.637636+00:00,admin,19959,Deductible_Amount,None,4963.79
+2026-10-17T08:08:05.643996+00:00,admin,19959,CoPay_Amount,None,50.0
+2026-10-17T08:08:05.644582+00:00,admin,19959,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T08:08:05.644582+00:00,admin,19959,Number_of_Previous_Claims_Provider,None,6
+2026-10-17T08:08:05.644582+00:00,admin,19959,Provider_Patient_Distance_Miles,None,6.0
+2026-10-17T08:08:05.644582+00:00,admin,19959,Claim_Submitted_Late,None,False
+2026-10-17T08:08:05.644582+00:00,admin,19959,Is_Fraudulent,None,0
+2026-10-17T08:08:05.651329+00:00,admin,19959,Policy_Start_Date,None,2025-01-29 00:00:00
+2026-10-17T08:08:05.651329+00:00,admin,19959,Policy_Type,None,Basic
+2026-10-17T08:08:05.651329+00:00,admin,19959,Patient_Income_Bracket,None,Medium
+2026-10-17T08:08:05.651329+00:00,admin,19959,Network_Provider,None,in-network
+2026-10-17T08:08:05.651329+00:00,admin,19959,Premium_Amount,None,500.0
+2026-10-17T08:08:05.651329+00:00,admin,19959,Claim_Status,None,Approved
+2026-10-17T08:08:05.658334+00:00,admin,19959,Processing_Days,None,14
+2026-10-17T08:08:13.831808+00:00,admin,19960,Patient_ID,None,P5001
+2026-10-17T08:08:13.831808+00:00,admin,19960,Policy_Number,None,POL-9931
+2026-10-17T08:08:13.838989+00:00,admin,19960,Claim_ID,None,20010
+2026-10-17T08:08:13.838989+00:00,admin,19960,Claim_Date,None,2024-06-01 00:00:00
+2026-10-17T08:08:13.838989+00:00,admin,19960,Service_Date,None,2025-01-08 00:00:00
+2026-10-17T08:08:13.838989+00:00,admin,19960,Policy_Expiration_Date,None,2029-02-13 00:00:00
+2026-10-17T08:08:13.838989+00:00,admin,19960,Claim_Amount,None,75000.0
+2026-10-17T08:08:13.838989+00:00,admin,19960,Patient_Age,None,45
+2026-10-17T08:08:13.846142+00:00,admin,19960,Patient_Gender,None,Female
+2026-10-17T08:08:13.846142+00:00,admin,19960,Patient_City,None,Dallas
+2026-10-17T08:08:13.846142+00:00,admin,19960,Patient_State,None,FL
+2026-10-17T08:08:13.846142+00:00,admin,19960,Hospital_ID,None,TX
+2026-10-17T08:08:13.846142+00:00,admin,19960,Provider_Type,None,Hospital
+2026-10-17T08:08:13.846142+00:00,admin,19960,Provider_Specialty,None,General Practice
+2026-10-17T08:08:13.846142+00:00,admin,19960,Provider_City,None,San Diego
+2026-10-17T08:08:13.852637+00:00,admin,19960,Provider_State,None,WA
+2026-10-17T08:08:13.852637+00:00,admin,19960,Diagnosis_Code,None,H25.9
+2026-10-17T08:08:13.852637+00:00,admin,19960,Procedure_Code,None,7104
+2026-10-17T08:08:13.852637+00:00,admin,19960,Number_of_Procedures,None,2
+2026-10-17T08:08:13.852637+00:00,admin,19960,Admission_Type,None,Emergency
+2026-10-17T08:08:13.852637+00:00,admin,19960,Discharge_Type,None,Deceased
+2026-10-17T08:08:13.852637+00:00,admin,19960,Length_of_Stay_Days,None,5
+2026-10-17T08:08:13.859126+00:00,admin,19960,Service_Type,None,Laboratory
+2026-10-17T08:08:13.860135+00:00,admin,19960,Deductible_Amount,None,4963.79
+2026-10-17T08:08:13.860135+00:00,admin,19960,CoPay_Amount,None,50.0
+2026-10-17T08:08:13.860135+00:00,admin,19960,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T08:08:13.863251+00:00,admin,19960,Number_of_Previous_Claims_Provider,None,6
+2026-10-17T08:08:13.863927+00:00,admin,19960,Provider_Patient_Distance_Miles,None,6.0
+2026-10-17T08:08:13.864527+00:00,admin,19960,Claim_Submitted_Late,None,False
+2026-10-17T08:08:13.864527+00:00,admin,19960,Is_Fraudulent,None,0
+2026-10-17T08:08:13.867008+00:00,admin,19960,Policy_Start_Date,None,2025-01-29 00:00:00
+2026-10-17T08:08:13.867598+00:00,admin,19960,Policy_Type,None,Basic
+2026-10-17T08:08:13.867598+00:00,admin,19960,Patient_Income_Bracket,None,Medium
+2026-10-17T08:08:13.867598+00:00,admin,19960,Network_Provider,None,in-network
+2026-10-17T08:08:13.867598+00:00,admin,19960,Premium_Amount,None,500.0
+2026-10-17T08:08:13.867598+00:00,admin,19960,Claim_Status,None,Approved
+2026-10-17T08:08:13.867598+00:00,admin,19960,Processing_Days,None,14
+2026-10-17T08:08:25.803663+00:00,admin,19961,Patient_ID,None,P5001
+2026-10-17T08:08:25.803663+00:00,admin,19961,Policy_Number,None,POL-9931
+2026-10-17T08:08:25.803663+00:00,admin,19961,Claim_ID,None,20010
+2026-10-17T08:08:25.803663+00:00,admin,19961,Claim_Date,None,2024-06-01 00:00:00
+2026-10-17T08:08:25.810561+00:00,admin,19961,Service_Date,None,2025-01-08 00:00:00
+2026-10-17T08:08:25.810561+00:00,admin,19961,Policy_Expiration_Date,None,2029-02-13 00:00:00
+2026-10-17T08:08:25.810561+00:00,admin,19961,Claim_Amount,None,75000.0
+2026-10-17T08:08:25.810561+00:00,admin,19961,Patient_Age,None,45
+2026-10-17T08:08:25.810561+00:00,admin,19961,Patient_Gender,None,Female
+2026-10-17T08:08:25.810561+00:00,admin,19961,Patient_City,None,Dallas
+2026-10-17T08:08:25.810561+00:00,admin,19961,Patient_State,None,FL
+2026-10-17T08:08:25.817111+00:00,admin,19961,Hospital_ID,None,TX
+2026-10-17T08:08:25.818058+00:00,admin,19961,Provider_Type,None,Hospital
+2026-10-17T08:08:25.818058+00:00,admin,19961,Provider_Specialty,None,General Practice
+2026-10-17T08:08:25.818058+00:00,admin,19961,Provider_City,None,San Diego
+2026-10-17T08:08:25.818058+00:00,admin,19961,Provider_State,None,WA
+2026-10-17T08:08:25.818058+00:00,admin,19961,Diagnosis_Code,None,H25.9
+2026-10-17T08:08:25.818058+00:00,admin,19961,Procedure_Code,None,7104
+2026-10-17T08:08:25.818058+00:00,admin,19961,Number_of_Procedures,None,2
+2026-10-17T08:08:25.824365+00:00,admin,19961,Admission_Type,None,Emergency
+2026-10-17T08:08:25.824365+00:00,admin,19961,Discharge_Type,None,Deceased
+2026-10-17T08:08:25.824365+00:00,admin,19961,Length_of_Stay_Days,None,5
+2026-10-17T08:08:25.824365+00:00,admin,19961,Service_Type,None,Laboratory
+2026-10-17T08:08:25.824365+00:00,admin,19961,Deductible_Amount,None,4963.79
+2026-10-17T08:08:25.824365+00:00,admin,19961,CoPay_Amount,None,50.0
+2026-10-17T08:08:25.824365+00:00,admin,19961,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T08:08:25.824365+00:00,admin,19961,Number_of_Previous_Claims_Provider,None,6
+2026-10-17T08:08:25.824365+00:00,admin,19961,Provider_Patient_Distance_Miles,None,6.0
+2026-10-17T08:08:25.831437+00:00,admin,19961,Claim_Submitted_Late,None,False
+2026-10-17T08:08:25.831437+00:00,admin,19961,Is_Fraudulent,None,0
+2026-10-17T08:08:25.831437+00:00,admin,19961,Policy_Start_Date,None,2025-01-29 00:00:00
+2026-10-17T08:08:25.831437+00:00,admin,19961,Policy_Type,None,Basic
+2026-10-17T08:08:25.831437+00:00,admin,19961,Patient_Income_Bracket,None,Medium
+2026-10-17T08:08:25.831437+00:00,admin,19961,Network_Provider,None,in-network
+2026-10-17T08:08:25.831437+00:00,admin,19961,Premium_Amount,None,500.0
+2026-10-17T08:08:25.831437+00:00,admin,19961,Claim_Status,None,Approved
+2026-10-17T08:08:25.831437+00:00,admin,19961,Processing_Days,None,14
+2026-10-17T08:08:55.942398+00:00,admin,19962,Patient_ID,None,P5001
+2026-10-17T08:08:55.942398+00:00,admin,19962,Policy_Number,None,POL-9931
+2026-10-17T08:08:55.950866+00:00,admin,19962,Claim_ID,None,20010
+2026-10-17T08:08:55.950866+00:00,admin,19962,Claim_Date,None,2024-06-01 00:00:00
+2026-10-17T08:08:55.950866+00:00,admin,19962,Service_Date,None,2025-01-08 00:00:00
+2026-10-17T08:08:55.950866+00:00,admin,19962,Policy_Expiration_Date,None,2029-02-13 00:00:00
+2026-10-17T08:08:55.955314+00:00,admin,19962,Claim_Amount,None,75000.0
+2026-10-17T08:08:55.955314+00:00,admin,19962,Patient_Age,None,45
+2026-10-17T08:08:55.955314+00:00,admin,19962,Patient_Gender,None,Female
+2026-10-17T08:08:55.955314+00:00,admin,19962,Patient_City,None,Dallas
+2026-10-17T08:08:55.955314+00:00,admin,19962,Patient_State,None,FL
+2026-10-17T08:08:55.955314+00:00,admin,19962,Hospital_ID,None,TX
+2026-10-17T08:08:55.955314+00:00,admin,19962,Provider_Type,None,Hospital
+2026-10-17T08:08:55.962213+00:00,admin,19962,Provider_Specialty,None,General Practice
+2026-10-17T08:08:55.962213+00:00,admin,19962,Provider_City,None,San Diego
+2026-10-17T08:08:55.963224+00:00,admin,19962,Provider_State,None,WA
+2026-10-17T08:08:55.963224+00:00,admin,19962,Diagnosis_Code,None,H25.9
+2026-10-17T08:08:55.963224+00:00,admin,19962,Procedure_Code,None,7104
+2026-10-17T08:08:55.963224+00:00,admin,19962,Number_of_Procedures,None,2
+2026-10-17T08:08:55.963224+00:00,admin,19962,Admission_Type,None,Emergency
+2026-10-17T08:08:55.963224+00:00,admin,19962,Discharge_Type,None,Deceased
+2026-10-17T08:08:55.963224+00:00,admin,19962,Length_of_Stay_Days,None,5
+2026-10-17T08:08:55.969127+00:00,admin,19962,Service_Type,None,Laboratory
+2026-10-17T08:08:55.970135+00:00,admin,19962,Deductible_Amount,None,4963.79
+2026-10-17T08:08:55.970135+00:00,admin,19962,CoPay_Amount,None,50.0
+2026-10-17T08:08:55.970135+00:00,admin,19962,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T08:08:55.970135+00:00,admin,19962,Number_of_Previous_Claims_Provider,None,6
+2026-10-17T08:08:55.970135+00:00,admin,19962,Provider_Patient_Distance_Miles,None,6.0
+2026-10-17T08:08:55.970135+00:00,admin,19962,Claim_Submitted_Late,None,False
+2026-10-17T08:08:55.970135+00:00,admin,19962,Is_Fraudulent,None,0
+2026-10-17T08:08:55.970135+00:00,admin,19962,Policy_Start_Date,None,2025-01-29 00:00:00
+2026-10-17T08:08:55.970135+00:00,admin,19962,Policy_Type,None,Basic
+2026-10-17T08:08:55.970135+00:00,admin,19962,Patient_Income_Bracket,None,Medium
+2026-10-17T08:08:55.977495+00:00,admin,19962,Network_Provider,None,in-network
+2026-10-17T08:08:55.977909+00:00,admin,19962,Premium_Amount,None,500.0
+2026-10-17T08:08:55.977909+00:00,admin,19962,Claim_Status,None,Approved
+2026-10-17T08:08:55.977909+00:00,admin,19962,Processing_Days,None,14
+2026-10-17T09:00:36.378991+00:00,admin,19957,Patient_ID,None,99984398
+2026-10-17T09:00:36.381255+00:00,admin,19957,Policy_Number,None,POL-E248F097
+2026-10-17T09:00:36.382090+00:00,admin,19957,Claim_ID,None,20002
+2026-10-17T09:00:36.383419+00:00,admin,19957,Claim_Date,None,2026-10-17 00:00:00
+2026-10-17T09:00:36.384457+00:00,admin,19957,Service_Date,None,2026-10-17 00:00:00
+2026-10-17T09:00:36.385079+00:00,admin,19957,Policy_Expiration_Date,None,2026-12-31 00:00:00
+2026-10-17T09:00:36.385989+00:00,admin,19957,Claim_Amount,None,12500.0
+2026-10-17T09:00:36.386980+00:00,admin,19957,Patient_Age,None,52
+2026-10-17T09:00:36.388173+00:00,admin,19957,Patient_Gender,None,Female
+2026-10-17T09:00:36.389440+00:00,admin,19957,Patient_City,None,Dallas
+2026-10-17T09:00:36.390126+00:00,admin,19957,Patient_State,None,TX
+2026-10-17T09:00:36.390770+00:00,admin,19957,Hospital_ID,None,105
+2026-10-17T09:00:36.391797+00:00,admin,19957,Provider_Type,None,Hospital
+2026-10-17T09:00:36.393691+00:00,admin,19957,Provider_Specialty,None,Internal Medicine
+2026-10-17T09:00:36.395166+00:00,admin,19957,Provider_City,None,Dallas
+2026-10-17T09:00:36.396863+00:00,admin,19957,Provider_State,None,TX
+2026-10-17T09:00:36.397423+00:00,admin,19957,Diagnosis_Code,None,I10
+2026-10-17T09:00:36.398052+00:00,admin,19957,Procedure_Code,None,99213
+2026-10-17T09:00:36.398556+00:00,admin,19957,Number_of_Procedures,None,1
+2026-10-17T09:00:36.399588+00:00,admin,19957,Admission_Type,None,Emergency
+2026-10-17T09:00:36.400298+00:00,admin,19957,Discharge_Type,None,Home
+2026-10-17T09:00:36.401137+00:00,admin,19957,Length_of_Stay_Days,None,1
+2026-10-17T09:00:36.402480+00:00,admin,19957,Service_Type,None,Inpatient
+2026-10-17T09:00:36.403174+00:00,admin,19957,Deductible_Amount,None,1000.0
+2026-10-17T09:00:36.403655+00:00,admin,19957,CoPay_Amount,None,50.0
+2026-10-17T09:00:36.404265+00:00,admin,19957,Number_of_Previous_Claims_Patient,None,0
+2026-10-17T09:00:36.404920+00:00,admin,19957,Number_of_Previous_Claims_Provider,None,5
+2026-10-17T09:00:36.405261+00:00,admin,19957,Provider_Patient_Distance_Miles,None,15.0
+2026-10-17T09:00:36.405841+00:00,admin,19957,Claim_Submitted_Late,None,False
+2026-10-17T09:00:36.406583+00:00,admin,19957,Is_Fraudulent,None,0
+2026-10-17T09:00:36.407145+00:00,admin,19957,Policy_Start_Date,None,2023-01-01 00:00:00
+2026-10-17T09:00:36.407576+00:00,admin,19957,Policy_Type,None,Standard
+2026-10-17T09:00:36.408045+00:00,admin,19957,Patient_Income_Bracket,None,Medium
+2026-10-17T09:00:36.408519+00:00,admin,19957,Network_Provider,None,in-network
+2026-10-17T09:00:36.408977+00:00,admin,19957,Premium_Amount,None,500.0
+2026-10-17T09:00:36.409504+00:00,admin,19957,Claim_Status,None,Approved
+2026-10-17T09:00:36.409955+00:00,admin,19957,Processing_Days,None,14
+2026-10-18T02:16:03.955848+00:00,admin,19957,Patient_ID,None,6734964
+2026-10-18T02:16:03.969678+00:00,admin,19957,Policy_Number,None,XAI21596356
+2026-10-18T02:16:03.974589+00:00,admin,19957,Claim_ID,None,675432
+2026-10-18T02:16:03.979382+00:00,admin,19957,Claim_Date,None,2024-06-03 00:00:00
+2026-10-18T02:16:03.986087+00:00,admin,19957,Service_Date,None,2023-05-31 00:00:00
+2026-10-18T02:16:03.989672+00:00,admin,19957,Policy_Expiration_Date,None,2026-09-23 00:00:00
+2026-10-18T02:16:03.995448+00:00,admin,19957,Claim_Amount,None,50000.0
+2026-10-18T02:16:04.000615+00:00,admin,19957,Patient_Age,None,45
+2026-10-18T02:16:04.005838+00:00,admin,19957,Patient_Gender,None,Male
+2026-10-18T02:16:04.009980+00:00,admin,19957,Patient_City,None,Washington
+2026-10-18T02:16:04.014553+00:00,admin,19957,Patient_State,None,NY
+2026-10-18T02:16:04.018204+00:00,admin,19957,Hospital_ID,None,50
+2026-10-18T02:16:04.022503+00:00,admin,19957,Provider_Type,None,Laboratory
+2026-10-18T02:16:04.026438+00:00,admin,19957,Provider_Specialty,None,General Practice
+2026-10-18T02:16:04.031832+00:00,admin,19957,Provider_City,None,San Jose
+2026-10-18T02:16:04.036860+00:00,admin,19957,Provider_State,None,PA
+2026-10-18T02:16:04.039996+00:00,admin,19957,Diagnosis_Code,None,J02.9
+2026-10-18T02:16:04.043348+00:00,admin,19957,Procedure_Code,None,93610
+2026-10-18T02:16:04.046050+00:00,admin,19957,Number_of_Procedures,None,2
+2026-10-18T02:16:04.051360+00:00,admin,19957,Admission_Type,None,Newborn
+2026-10-18T02:16:04.058039+00:00,admin,19957,Discharge_Type,None,Deceased
+2026-10-18T02:16:04.064590+00:00,admin,19957,Length_of_Stay_Days,None,6
+2026-10-18T02:16:04.068008+00:00,admin,19957,Service_Type,None,Inpatient
+2026-10-18T02:16:04.074769+00:00,admin,19957,Deductible_Amount,None,2912.09
+2026-10-18T02:16:04.079683+00:00,admin,19957,CoPay_Amount,None,969.34
+2026-10-18T02:16:04.083506+00:00,admin,19957,Number_of_Previous_Claims_Patient,None,0
+2026-10-18T02:16:04.088758+00:00,admin,19957,Number_of_Previous_Claims_Provider,None,3
+2026-10-18T02:16:04.094042+00:00,admin,19957,Provider_Patient_Distance_Miles,None,490.64
+2026-10-18T02:16:04.100841+00:00,admin,19957,Claim_Submitted_Late,None,False
+2026-10-18T02:16:04.104593+00:00,admin,19957,Is_Fraudulent,None,0
+2026-10-18T02:16:04.108155+00:00,admin,19957,Policy_Start_Date,None,2024-06-02 00:00:00
+2026-10-18T02:16:04.114004+00:00,admin,19957,Policy_Type,None,Standard
+2026-10-18T02:16:04.119961+00:00,admin,19957,Patient_Income_Bracket,None,Low
+2026-10-18T02:16:04.123576+00:00,admin,19957,Network_Provider,None,in-network
+2026-10-18T02:16:04.129240+00:00,admin,19957,Premium_Amount,None,10176.02
+2026-10-18T02:16:04.133096+00:00,admin,19957,Claim_Status,None,Approved
+2026-10-18T02:16:04.135883+00:00,admin,19957,Processing_Days,None,14
+2026-10-18T02:34:46.912269+00:00,admin,19957,Patient_ID,None,99984398
+2026-10-18T02:34:46.913066+00:00,admin,19957,Policy_Number,None,POL-BB125211
+2026-10-18T02:34:46.913632+00:00,admin,19957,Claim_ID,None,20002
+2026-10-18T02:34:46.914433+00:00,admin,19957,Claim_Date,None,2024-05-23 00:00:00
+2026-10-18T02:34:46.915017+00:00,admin,19957,Service_Date,None,2024-03-23 00:00:00
+2026-10-18T02:34:46.915556+00:00,admin,19957,Policy_Expiration_Date,None,2028-04-23 00:00:00
+2026-10-18T02:34:46.916375+00:00,admin,19957,Claim_Amount,None,350925.87
+2026-10-18T02:34:46.917168+00:00,admin,19957,Patient_Age,None,45
+2026-10-18T02:34:46.917924+00:00,admin,19957,Patient_Gender,None,Female
+2026-10-18T02:34:46.918616+00:00,admin,19957,Patient_City,None,Columbus
+2026-10-18T02:34:46.919062+00:00,admin,19957,Patient_State,None,WI
+2026-10-18T02:34:46.919589+00:00,admin,19957,Hospital_ID,None,TX
+2026-10-18T02:34:46.920024+00:00,admin,19957,Provider_Type,None,Specialist Office
+2026-10-18T02:34:46.920531+00:00,admin,19957,Provider_Specialty,None,Physical Therapy
+2026-10-18T02:34:46.921027+00:00,admin,19957,Provider_City,None,india
+2026-10-18T02:34:46.921633+00:00,admin,19957,Provider_State,None,WA
+2026-10-18T02:34:46.922093+00:00,admin,19957,Diagnosis_Code,None,I10
+2026-10-18T02:34:46.922631+00:00,admin,19957,Procedure_Code,None,93308
+2026-10-18T02:34:46.923801+00:00,admin,19957,Number_of_Procedures,None,1
+2026-10-18T02:34:46.924732+00:00,admin,19957,Admission_Type,None,Trauma
+2026-10-18T02:34:46.925209+00:00,admin,19957,Discharge_Type,None,Home
+2026-10-18T02:34:46.925840+00:00,admin,19957,Length_of_Stay_Days,None,6
+2026-10-18T02:34:46.926342+00:00,admin,19957,Service_Type,None,Outpatient
+2026-10-18T02:34:46.926784+00:00,admin,19957,Deductible_Amount,None,4963.79
+2026-10-18T02:34:46.927353+00:00,admin,19957,CoPay_Amount,None,57.99
+2026-10-18T02:34:46.927813+00:00,admin,19957,Number_of_Previous_Claims_Patient,None,0
+2026-10-18T02:34:46.928227+00:00,admin,19957,Number_of_Previous_Claims_Provider,None,6
+2026-10-18T02:34:46.928745+00:00,admin,19957,Provider_Patient_Distance_Miles,None,271.75
+2026-10-18T02:34:46.929213+00:00,admin,19957,Claim_Submitted_Late,None,False
+2026-10-18T02:34:46.929623+00:00,admin,19957,Is_Fraudulent,None,0
+2026-10-18T02:34:46.930744+00:00,admin,19957,Policy_Start_Date,None,2024-04-24 00:00:00
+2026-10-18T02:34:46.931504+00:00,admin,19957,Policy_Type,None,Standard
+2026-10-18T02:34:46.932005+00:00,admin,19957,Patient_Income_Bracket,None,Medium
+2026-10-18T02:34:46.932481+00:00,admin,19957,Network_Provider,None,in-network
+2026-10-18T02:34:46.932988+00:00,admin,19957,Premium_Amount,None,13388.47
+2026-10-18T02:34:46.933452+00:00,admin,19957,Claim_Status,None,Approved
+2026-10-18T02:34:46.933912+00:00,admin,19957,Processing_Days,None,14
+2026-10-18T02:37:26.223420+00:00,admin,19958,Patient_ID,None,P12345
+2026-10-18T02:37:26.224495+00:00,admin,19958,Policy_Number,None,XAI2159939676
+2026-10-18T02:37:26.225158+00:00,admin,19958,Claim_ID,None,6996876
+2026-10-18T02:37:26.225561+00:00,admin,19958,Claim_Date,None,2024-05-23 00:00:00
+2026-10-18T02:37:26.225941+00:00,admin,19958,Service_Date,None,2024-03-23 00:00:00
+2026-10-18T02:37:26.226337+00:00,admin,19958,Policy_Expiration_Date,None,2028-04-23 00:00:00
+2026-10-18T02:37:26.226695+00:00,admin,19958,Claim_Amount,None,50000.0
+2026-10-18T02:37:26.227044+00:00,admin,19958,Patient_Age,None,45
+2026-10-18T02:37:26.227377+00:00,admin,19958,Patient_Gender,None,Female
+2026-10-18T02:37:26.227690+00:00,admin,19958,Patient_City,None,Columbus
+2026-10-18T02:37:26.228039+00:00,admin,19958,Patient_State,None,WI
+2026-10-18T02:37:26.228352+00:00,admin,19958,Hospital_ID,None,TX
+2026-10-18T02:37:26.229092+00:00,admin,19958,Provider_Type,None,Hospital
+2026-10-18T02:37:26.229787+00:00,admin,19958,Provider_Specialty,None,Internal Medicine
+2026-10-18T02:37:26.230511+00:00,admin,19958,Provider_City,None,india
+2026-10-18T02:37:26.231290+00:00,admin,19958,Provider_State,None,WA
+2026-10-18T02:37:26.231820+00:00,admin,19958,Diagnosis_Code,None,I10
+2026-10-18T02:37:26.232342+00:00,admin,19958,Procedure_Code,None,93308
+2026-10-18T02:37:26.232832+00:00,admin,19958,Number_of_Procedures,None,1
+2026-10-18T02:37:26.233333+00:00,admin,19958,Admission_Type,None,Emergency
+2026-10-18T02:37:26.233866+00:00,admin,19958,Discharge_Type,None,Home
+2026-10-18T02:37:26.234397+00:00,admin,19958,Length_of_Stay_Days,None,6
+2026-10-18T02:37:26.234870+00:00,admin,19958,Service_Type,None,Inpatient
+2026-10-18T02:37:26.235357+00:00,admin,19958,Deductible_Amount,None,4963.79
+2026-10-18T02:37:26.236228+00:00,admin,19958,CoPay_Amount,None,57.99
+2026-10-18T02:37:26.236991+00:00,admin,19958,Number_of_Previous_Claims_Patient,None,0
+2026-10-18T02:37:26.237570+00:00,admin,19958,Number_of_Previous_Claims_Provider,None,6
+2026-10-18T02:37:26.238212+00:00,admin,19958,Provider_Patient_Distance_Miles,None,271.75
+2026-10-18T02:37:26.238784+00:00,admin,19958,Claim_Submitted_Late,None,False
+2026-10-18T02:37:26.239337+00:00,admin,19958,Is_Fraudulent,None,0
+2026-10-18T02:37:26.239912+00:00,admin,19958,Policy_Start_Date,None,2024-04-24 00:00:00
+2026-10-18T02:37:26.240778+00:00,admin,19958,Policy_Type,None,Standard
+2026-10-18T02:37:26.241428+00:00,admin,19958,Patient_Income_Bracket,None,Medium
+2026-10-18T02:37:26.241907+00:00,admin,19958,Network_Provider,None,in-network
+2026-10-18T02:37:26.242550+00:00,admin,19958,Premium_Amount,None,13388.47
+2026-10-18T02:37:26.243488+00:00,admin,19958,Claim_Status,None,Approved
+2026-10-18T02:37:26.244403+00:00,admin,19958,Processing_Days,None,14
+2026-10-18T02:45:26.647092+00:00,admin,19959,Patient_ID,None,P23456
+2026-10-18T02:45:26.647979+00:00,admin,19959,Policy_Number,None,XAI2198765436
+2026-10-18T02:45:26.648553+00:00,admin,19959,Claim_ID,None,9876543
+2026-10-18T02:45:26.649105+00:00,admin,19959,Claim_Date,None,2024-05-23 00:00:00
+2026-10-18T02:45:26.649638+00:00,admin,19959,Service_Date,None,2024-03-23 00:00:00
+2026-10-18T02:45:26.650400+00:00,admin,19959,Policy_Expiration_Date,None,2028-04-23 00:00:00
+2026-10-18T02:45:26.650956+00:00,admin,19959,Claim_Amount,None,50000.0
+2026-10-18T02:45:26.651632+00:00,admin,19959,Patient_Age,None,45
+2026-10-18T02:45:26.652481+00:00,admin,19959,Patient_Gender,None,Female
+2026-10-18T02:45:26.653168+00:00,admin,19959,Patient_City,None,Columbus
+2026-10-18T02:45:26.653661+00:00,admin,19959,Patient_State,None,WI
+2026-10-18T02:45:26.654128+00:00,admin,19959,Hospital_ID,None,TX
+2026-10-18T02:45:26.654734+00:00,admin,19959,Provider_Type,None,Hospital
+2026-10-18T02:45:26.655322+00:00,admin,19959,Provider_Specialty,None,Internal Medicine
+2026-10-18T02:45:26.655807+00:00,admin,19959,Provider_City,None,india
+2026-10-18T02:45:26.656340+00:00,admin,19959,Provider_State,None,WA
+2026-10-18T02:45:26.656764+00:00,admin,19959,Diagnosis_Code,None,I10
+2026-10-18T02:45:26.657236+00:00,admin,19959,Procedure_Code,None,93308
+2026-10-18T02:45:26.657678+00:00,admin,19959,Number_of_Procedures,None,1
+2026-10-18T02:45:26.658348+00:00,admin,19959,Admission_Type,None,Emergency
+2026-10-18T02:45:26.659392+00:00,admin,19959,Discharge_Type,None,Home
+2026-10-18T02:45:26.660115+00:00,admin,19959,Length_of_Stay_Days,None,6
+2026-10-18T02:45:26.660690+00:00,admin,19959,Service_Type,None,Inpatient
+2026-10-18T02:45:26.661181+00:00,admin,19959,Deductible_Amount,None,4963.79
+2026-10-18T02:45:26.661659+00:00,admin,19959,CoPay_Amount,None,57.99
+2026-10-18T02:45:26.662178+00:00,admin,19959,Number_of_Previous_Claims_Patient,None,0
+2026-10-18T02:45:26.662659+00:00,admin,19959,Number_of_Previous_Claims_Provider,None,6
+2026-10-18T02:45:26.663123+00:00,admin,19959,Provider_Patient_Distance_Miles,None,271.75
+2026-10-18T02:45:26.663588+00:00,admin,19959,Claim_Submitted_Late,None,False
+2026-10-18T02:45:26.664036+00:00,admin,19959,Is_Fraudulent,None,0
+2026-10-18T02:45:26.664493+00:00,admin,19959,Policy_Start_Date,None,2024-04-24 00:00:00
+2026-10-18T02:45:26.665000+00:00,admin,19959,Policy_Type,None,Standard
+2026-10-18T02:45:26.665913+00:00,admin,19959,Patient_Income_Bracket,None,Medium
+2026-10-18T02:45:26.666819+00:00,admin,19959,Network_Provider,None,in-network
+2026-10-18T02:45:26.667466+00:00,admin,19959,Premium_Amount,None,13388.47
+2026-10-18T02:45:26.667951+00:00,admin,19959,Claim_Status,None,Approved
+2026-10-18T02:45:26.668497+00:00,admin,19959,Processing_Days,None,14
+2026-10-18T02:47:18.538758+00:00,admin,19960,Patient_ID,None,P23456
+2026-10-18T02:47:18.539594+00:00,admin,19960,Policy_Number,None,XAI2198765436
+2026-10-18T02:47:18.540271+00:00,admin,19960,Claim_ID,None,9876543
+2026-10-18T02:47:18.540807+00:00,admin,19960,Claim_Date,None,2024-05-23 00:00:00
+2026-10-18T02:47:18.541404+00:00,admin,19960,Service_Date,None,2024-03-23 00:00:00
+2026-10-18T02:47:18.542171+00:00,admin,19960,Policy_Expiration_Date,None,2028-04-23 00:00:00
+2026-10-18T02:47:18.543243+00:00,admin,19960,Claim_Amount,None,50000.0
+2026-10-18T02:47:18.544219+00:00,admin,19960,Patient_Age,None,45
+2026-10-18T02:47:18.544950+00:00,admin,19960,Patient_Gender,None,Female
+2026-10-18T02:47:18.545778+00:00,admin,19960,Patient_City,None,Columbus
+2026-10-18T02:47:18.546364+00:00,admin,19960,Patient_State,None,WI
+2026-10-18T02:47:18.546917+00:00,admin,19960,Hospital_ID,None,TX
+2026-10-18T02:47:18.547372+00:00,admin,19960,Provider_Type,None,Hospital
+2026-10-18T02:47:18.547883+00:00,admin,19960,Provider_Specialty,None,Internal Medicine
+2026-10-18T02:47:18.548371+00:00,admin,19960,Provider_City,None,india
+2026-10-18T02:47:18.549118+00:00,admin,19960,Provider_State,None,WA
+2026-10-18T02:47:18.549765+00:00,admin,19960,Diagnosis_Code,None,I10
+2026-10-18T02:47:18.550462+00:00,admin,19960,Procedure_Code,None,93308
+2026-10-18T02:47:18.551056+00:00,admin,19960,Number_of_Procedures,None,1
+2026-10-18T02:47:18.551708+00:00,admin,19960,Admission_Type,None,Emergency
+2026-10-18T02:47:18.552314+00:00,admin,19960,Discharge_Type,None,Home
+2026-10-18T02:47:18.552912+00:00,admin,19960,Length_of_Stay_Days,None,6
+2026-10-18T02:47:18.553457+00:00,admin,19960,Service_Type,None,Inpatient
+2026-10-18T02:47:18.553969+00:00,admin,19960,Deductible_Amount,None,4963.79
+2026-10-18T02:47:18.554485+00:00,admin,19960,CoPay_Amount,None,57.99
+2026-10-18T02:47:18.555053+00:00,admin,19960,Number_of_Previous_Claims_Patient,None,0
+2026-10-18T02:47:18.555527+00:00,admin,19960,Number_of_Previous_Claims_Provider,None,6
+2026-10-18T02:47:18.556047+00:00,admin,19960,Provider_Patient_Distance_Miles,None,271.75
+2026-10-18T02:47:18.557020+00:00,admin,19960,Claim_Submitted_Late,None,False
+2026-10-18T02:47:18.557759+00:00,admin,19960,Is_Fraudulent,None,0
+2026-10-18T02:47:18.558315+00:00,admin,19960,Policy_Start_Date,None,2024-04-24 00:00:00
+2026-10-18T02:47:18.558830+00:00,admin,19960,Policy_Type,None,Standard
+2026-10-18T02:47:18.559287+00:00,admin,19960,Patient_Income_Bracket,None,Medium
+2026-10-18T02:47:18.559728+00:00,admin,19960,Network_Provider,None,in-network
+2026-10-18T02:47:18.560204+00:00,admin,19960,Premium_Amount,None,13388.47
+2026-10-18T02:47:18.560661+00:00,admin,19960,Claim_Status,None,Approved
+2026-10-18T02:47:18.561118+00:00,admin,19960,Processing_Days,None,14
+2026-10-18T02:54:34.532130+00:00,admin,19961,Patient_ID,None,987654
+2026-10-18T02:54:34.533183+00:00,admin,19961,Policy_Number,None,234567890
+2026-10-18T02:54:34.534359+00:00,admin,19961,Claim_ID,None,1234567
+2026-10-18T02:54:34.535167+00:00,admin,19961,Claim_Date,None,2024-05-23 00:00:00
+2026-10-18T02:54:34.535938+00:00,admin,19961,Service_Date,None,2024-03-23 00:00:00
+2026-10-18T02:54:34.536713+00:00,admin,19961,Policy_Expiration_Date,None,2028-04-23 00:00:00
+2026-10-18T02:54:34.538250+00:00,admin,19961,Claim_Amount,None,50000.0
+2026-10-18T02:54:34.539262+00:00,admin,19961,Patient_Age,None,45
+2026-10-18T02:54:34.540013+00:00,admin,19961,Patient_Gender,None,Female
+2026-10-18T02:54:34.540702+00:00,admin,19961,Patient_City,None,Columbus
+2026-10-18T02:54:34.541503+00:00,admin,19961,Patient_State,None,WI
+2026-10-18T02:54:34.542109+00:00,admin,19961,Hospital_ID,None,TX
+2026-10-18T02:54:34.542772+00:00,admin,19961,Provider_Type,None,Hospital
+2026-10-18T02:54:34.543457+00:00,admin,19961,Provider_Specialty,None,Internal Medicine
+2026-10-18T02:54:34.544372+00:00,admin,19961,Provider_City,None,india
+2026-10-18T02:54:34.545631+00:00,admin,19961,Provider_State,None,WA
+2026-10-18T02:54:34.546560+00:00,admin,19961,Diagnosis_Code,None,I10
+2026-10-18T02:54:34.547272+00:00,admin,19961,Procedure_Code,None,93308
+2026-10-18T02:54:34.547905+00:00,admin,19961,Number_of_Procedures,None,1
+2026-10-18T02:54:34.548565+00:00,admin,19961,Admission_Type,None,Emergency
+2026-10-18T02:54:34.549248+00:00,admin,19961,Discharge_Type,None,Home
+2026-10-18T02:54:34.549880+00:00,admin,19961,Length_of_Stay_Days,None,6
+2026-10-18T02:54:34.550538+00:00,admin,19961,Service_Type,None,Inpatient
+2026-10-18T02:54:34.551572+00:00,admin,19961,Deductible_Amount,None,4963.79
+2026-10-18T02:54:34.552585+00:00,admin,19961,CoPay_Amount,None,57.99
+2026-10-18T02:54:34.553495+00:00,admin,19961,Number_of_Previous_Claims_Patient,None,0
+2026-10-18T02:54:34.554166+00:00,admin,19961,Number_of_Previous_Claims_Provider,None,6
+2026-10-18T02:54:34.554711+00:00,admin,19961,Provider_Patient_Distance_Miles,None,271.75
+2026-10-18T02:54:34.555672+00:00,admin,19961,Claim_Submitted_Late,None,False
+2026-10-18T02:54:34.556387+00:00,admin,19961,Is_Fraudulent,None,0
+2026-10-18T02:54:34.556932+00:00,admin,19961,Policy_Start_Date,None,2024-04-24 00:00:00
+2026-10-18T02:54:34.557478+00:00,admin,19961,Policy_Type,None,Standard
+2026-10-18T02:54:34.558832+00:00,admin,19961,Patient_Income_Bracket,None,Medium
+2026-10-18T02:54:34.559863+00:00,admin,19961,Network_Provider,None,in-network
+2026-10-18T02:54:34.560500+00:00,admin,19961,Premium_Amount,None,13388.47
+2026-10-18T02:54:34.561020+00:00,admin,19961,Claim_Status,None,Approved
+2026-10-18T02:54:34.561700+00:00,admin,19961,Processing_Days,None,14
+2026-10-18T03:17:30.837229+00:00,admin,19962,Patient_ID,None,99984399
+2026-10-18T03:17:30.837991+00:00,admin,19962,Policy_Number,None,XAI334455667
+2026-10-18T03:17:30.838609+00:00,admin,19962,Claim_ID,None,9876544
+2026-10-18T03:17:30.839079+00:00,admin,19962,Claim_Date,None,2024-09-30 00:00:00
+2026-10-18T03:17:30.839507+00:00,admin,19962,Service_Date,None,2024-09-28 00:00:00
+2026-10-18T03:17:30.839988+00:00,admin,19962,Policy_Expiration_Date,None,2026-12-31 00:00:00
+2026-10-18T03:17:30.840521+00:00,admin,19962,Claim_Amount,None,52000.0
+2026-10-18T03:17:30.840928+00:00,admin,19962,Patient_Age,None,45
+2026-10-18T03:17:30.841319+00:00,admin,19962,Patient_Gender,None,Female
+2026-10-18T03:17:30.841717+00:00,admin,19962,Patient_City,None,Dallas
+2026-10-18T03:17:30.842110+00:00,admin,19962,Patient_State,None,TX
+2026-10-18T03:17:30.842581+00:00,admin,19962,Hospital_ID,None,101
+2026-10-18T03:17:30.843185+00:00,admin,19962,Provider_Type,None,Hospital Provider Specialty Cardiology Provider City Chicago Provider State IL Network Provider In-Network Provider
+2026-10-18T03:17:30.843622+00:00,admin,19962,Provider_Specialty,None,Internal Medicine
+2026-10-18T03:17:30.844024+00:00,admin,19962,Provider_City,None,Dallas
+2026-10-18T03:17:30.844491+00:00,admin,19962,Provider_State,None,TX
+2026-10-18T03:17:30.844996+00:00,admin,19962,Diagnosis_Code,None,I10
+2026-10-18T03:17:30.845566+00:00,admin,19962,Procedure_Code,None,93307
+2026-10-18T03:17:30.846017+00:00,admin,19962,Number_of_Procedures,None,1
+2026-10-18T03:17:30.846561+00:00,admin,19962,Admission_Type,None,Emergency
+2026-10-18T03:17:30.847078+00:00,admin,19962,Discharge_Type,None,Home
+2026-10-18T03:17:30.847610+00:00,admin,19962,Length_of_Stay_Days,None,4
+2026-10-18T03:17:30.848061+00:00,admin,19962,Service_Type,None,Inpatient
+2026-10-18T03:17:30.848710+00:00,admin,19962,Deductible_Amount,None,1000.0
+2026-10-18T03:17:30.849215+00:00,admin,19962,CoPay_Amount,None,50.0
+2026-10-18T03:17:30.849759+00:00,admin,19962,Number_of_Previous_Claims_Patient,None,0
+2026-10-18T03:17:30.850315+00:00,admin,19962,Number_of_Previous_Claims_Provider,None,5
+2026-10-18T03:17:30.850749+00:00,admin,19962,Provider_Patient_Distance_Miles,None,15.0
+2026-10-18T03:17:30.851127+00:00,admin,19962,Claim_Submitted_Late,None,False
+2026-10-18T03:17:30.851509+00:00,admin,19962,Is_Fraudulent,None,0
+2026-10-18T03:17:30.851883+00:00,admin,19962,Policy_Start_Date,None,2023-01-01 00:00:00
+2026-10-18T03:17:30.852268+00:00,admin,19962,Policy_Type,None,Standard
+2026-10-18T03:17:30.852677+00:00,admin,19962,Patient_Income_Bracket,None,Medium
+2026-10-18T03:17:30.853045+00:00,admin,19962,Network_Provider,None,in-network
+2026-10-18T03:17:30.853461+00:00,admin,19962,Premium_Amount,None,500.0
+2026-10-18T03:17:30.853869+00:00,admin,19962,Claim_Status,None,Approved
+2026-10-18T03:17:30.854238+00:00,admin,19962,Processing_Days,None,14
+2026-10-18T03:23:29.055911+00:00,admin,19962,Claim_Amount,52000.0,52000.0
+2026-10-18T03:23:29.057044+00:00,admin,19962,Service_Date,2024-09-28 00:00:00,2026-09-28 00:00:00
+2026-10-18T03:23:29.061397+00:00,admin,19962,Claim_Date,2024-09-30 00:00:00,2026-10-10 00:00:00
+2026-10-18T03:23:29.062638+00:00,admin,19962,Policy_Number,XAI334455667,XAI334455667
+2026-10-18T03:23:29.063407+00:00,admin,19962,Patient_Age,45,45
+2026-10-18T03:23:29.064083+00:00,admin,19962,Diagnosis_Code,I10,I10
+2026-10-18T03:23:29.064857+00:00,admin,19962,Procedure_Code,93307,93308
+2026-10-18T03:23:29.065596+00:00,admin,19962,Provider_Type,Hospital Provider Specialty Cardiology Provider City Chicago Provider State IL Network Provider In-Network Provider,Hospital Provider Specialty
+2026-10-18T03:23:29.066418+00:00,admin,19962,Admission_Type,Emergency,Emergency
+2026-10-18T03:23:29.067485+00:00,admin,19962,Length_of_Stay_Days,4,4
+2026-10-18T03:24:12.938422+00:00,admin,19962,Claim_Amount,52000.0,52000.0
+2026-10-18T03:24:12.939869+00:00,admin,19962,Service_Date,2026-09-28 00:00:00,2026-09-28 00:00:00
+2026-10-18T03:24:12.941186+00:00,admin,19962,Claim_Date,2026-10-10 00:00:00,2026-10-10 00:00:00
+2026-10-18T03:24:12.942213+00:00,admin,19962,Policy_Number,XAI334455667,XAI334455667
+2026-10-18T03:24:12.943285+00:00,admin,19962,Patient_Age,45,45
+2026-10-18T03:24:12.944040+00:00,admin,19962,Diagnosis_Code,I10,I10
+2026-10-18T03:24:12.944751+00:00,admin,19962,Procedure_Code,93308,93308
+2026-10-18T03:24:12.945486+00:00,admin,19962,Provider_Type,Hospital Provider Specialty,Hospital Provider Specialty
+2026-10-18T03:24:12.946250+00:00,admin,19962,Admission_Type,Emergency,Emergency
+2026-10-18T03:24:12.946910+00:00,admin,19962,Length_of_Stay_Days,4,4
