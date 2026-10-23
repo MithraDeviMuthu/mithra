@@ -177,7 +177,7 @@ def verify_claim_against_policy(owner_id, policy_document_id, claim_fields, rag_
                     "section": section,
                     "quote": quote,
                     "reason": "The policy number on the claim does not match the policy document reference.",
-                    "status": "Verified",
+                    "status": "Mismatch",
                 })
                 continue
 
@@ -243,8 +243,12 @@ def verify_claim_against_policy(owner_id, policy_document_id, claim_fields, rag_
             }],
         }
 
+    statuses = {f["status"] for f in findings}
+    status = ("mismatch" if "Mismatch" in statuses
+              else "verified" if "Verified" in statuses
+              else "uncertain")
     return {
-        "status": "verified" if any(f["status"] == "Verified" for f in findings) else "uncertain",
+        "status": status,
         "document_name": policy.get("filename"),
         "findings": findings,
     }

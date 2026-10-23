@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from pathlib import Path
 import joblib
@@ -107,12 +108,27 @@ print("\nTraining model...")
 model.fit(X_train, y_train)
 
 # 9. Choose the threshold on VALIDATION data (never on the test set)
+# Finer grid (step 0.01 instead of 6 hand-picked points) so F1 can be
+# maximized more precisely.
 val_proba = model.predict_proba(X_val)[:, 1]
-THRESHOLD = max(
-    [0.5, 0.4, 0.35, 0.3, 0.25, 0.2],
+ts = np.arange(0.05, 0.60, 0.01)
+THRESHOLD = float(max(
+    ts,
     key=lambda t: f1_score(y_val, (val_proba >= t).astype(int))
-)
+))
 print("Chosen threshold (validation):", THRESHOLD)
+
+# 9b. Calibrate the "medium risk" cutoff from validation data instead of
+# hard-coding it as half of THRESHOLD. MEDIUM is the highest cutoff that
+# still catches at least 90% of actual fraud cases in validation ("recall
+# floor"), capped at THRESHOLD so medium never exceeds the high-risk cutoff.
+fraud_scores = val_proba[(y_val == 1).values]
+MEDIUM = float(max(
+    (t for t in ts if (fraud_scores >= t).mean() >= 0.90),
+    default=THRESHOLD / 2  # fallback only if no threshold reaches 90% recall
+))
+MEDIUM = min(MEDIUM, THRESHOLD)
+print("Chosen medium-risk threshold (validation):", MEDIUM)
 
 # 10. Evaluate ONCE on the test data
 proba = model.predict_proba(X_test)[:, 1]
@@ -123,12 +139,12 @@ predictions = (proba >= THRESHOLD).astype(int)
 print(classification_report(y_test, predictions, zero_division=0))
 print(confusion_matrix(y_test, predictions))
 
-# 11. Save the model together with its threshold
+# 11. Save the model together with its thresholds
 output_dir = Path("ml")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 joblib.dump(
-    {"model": model, "threshold": THRESHOLD},
+    {"model": model, "threshold": THRESHOLD, "medium_threshold": MEDIUM},
     output_dir / "health_claims_model.joblib"
 )
 

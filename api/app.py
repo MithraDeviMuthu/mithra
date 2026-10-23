@@ -120,6 +120,7 @@ def train_default_model():
 
 model = None
 THRESHOLD = float(os.environ.get("FRAUD_THRESHOLD", DEFAULT_THRESHOLD))
+MEDIUM_THRESHOLD = THRESHOLD / 2
 EXPECTED_COLUMNS = []
 CATEGORICAL = []
 NUMERIC = []
@@ -127,12 +128,14 @@ RAW_FIELDS = []
 
 if MODEL_PATH.exists() or train_default_model():
     saved = joblib.load(MODEL_PATH)
-    if isinstance(saved, dict):            # {"model": pipeline, "threshold": 0.3}
+    if isinstance(saved, dict):            # {"model": pipeline, "threshold": 0.3, "medium_threshold": 0.15}
         model = saved["model"]
         THRESHOLD = float(os.environ.get("FRAUD_THRESHOLD", saved.get("threshold", DEFAULT_THRESHOLD)))
+        MEDIUM_THRESHOLD = float(saved.get("medium_threshold", THRESHOLD / 2))
     else:                                  # a bare pipeline saved earlier
         model = saved
         THRESHOLD = float(os.environ.get("FRAUD_THRESHOLD", DEFAULT_THRESHOLD))
+        MEDIUM_THRESHOLD = THRESHOLD / 2
 
     preprocessor = model.named_steps["preprocessor"]
     EXPECTED_COLUMNS = list(preprocessor.feature_names_in_)
@@ -210,7 +213,12 @@ if CORS:
 
 
 APP_USER = os.environ.get("APP_USER", "admin")
-APP_PASSWORD = os.environ.get("APP_PASSWORD", "adminacc")
+APP_PASSWORD = os.environ.get("APP_PASSWORD")
+if not APP_PASSWORD:
+    raise RuntimeError(
+        "APP_PASSWORD environment variable is not set. Refusing to start with no password. "
+        "Set APP_USER and APP_PASSWORD before running the app."
+    )
 OPEN_PATHS = {"/", "/health", "/api/login"}
 
 
@@ -227,8 +235,8 @@ def require_login():
 @app.post("/api/login")
 def login():
     data = request.get_json(silent=True) or {}
-    user_ok = secrets.compare_digest(str(data.get("username", "")), APP_USER)
-    pass_ok = secrets.compare_digest(str(data.get("password", "")), APP_PASSWORD)
+    user_ok = secrets.compare_digest(str(data.get("username", "")).encode(), APP_USER.encode())
+    pass_ok = secrets.compare_digest(str(data.get("password", "")).encode(), APP_PASSWORD.encode())
     if not (user_ok and pass_ok):
         return jsonify(error="Invalid username or password."), 401
     session["user"] = APP_USER
@@ -286,7 +294,7 @@ def prepare(records, expected_columns=None, numeric=None, categorical=None):
 def risk_level(prob):
     if prob >= THRESHOLD:
         return "High"
-    if prob >= THRESHOLD / 2:
+    if prob >= MEDIUM_THRESHOLD:
         return "Medium"
     return "Low"
 
@@ -1055,7 +1063,7 @@ def post_claim():
     if not isinstance(payload, dict) or not payload:
         return jsonify(error="Expected JSON object containing claim fields."), 400
 
-    # 1. Reuse existing prediction logic for fraud score and risk level
+    # 1. Fraud score and risk level
     if model is None:
         return jsonify(error="Fraud model is not available. Please ensure model training is complete."), 503
 
@@ -1068,13 +1076,12 @@ def post_claim():
     except Exception as exc:
         return jsonify(error=f"Could not calculate fraud prediction: {exc}"), 422
 
-    # 2. Reuse existing prediction logic for claim status
+    # 2. Claim status prediction
     predicted_status = "Approved"
     status_probs_dict = {}
     if status_model is not None and status_label_encoder is not None:
         try:
             status_payload = dict(payload)
-            status_payload["Is_Fraudulent"] = 1 if is_fraud else 0
             X_status = prepare([status_payload], STATUS_EXPECTED_COLUMNS, STATUS_NUMERIC, STATUS_CATEGORICAL)
             status_probs = status_model.predict_proba(X_status)
             pred_idx = int(status_probs.argmax(axis=1)[0])
@@ -1099,9 +1106,8 @@ def post_claim():
     if not isinstance(final_status, str) or not final_status.strip():
         final_status = predicted_status
 
-    # 3. Guard against concurrent write issues using DATA_LOCK
+    # 3. Guard against concurrent writes
     with DATA_LOCK:
-        # Generate new unique Claim ID
         try:
             max_id = pd.to_numeric(DATA["Claim_ID"], errors="coerce").dropna().max()
             next_claim_num = int(max_id + 1) if pd.notna(max_id) else len(DATA) + 1
@@ -1117,7 +1123,6 @@ def post_claim():
         else:
             new_claim_id = next_claim_num
 
-        # Generate unique Patient_ID if not provided
         provided_pid = payload.get("Patient_ID") or payload.get("patient_id")
         if provided_pid and str(provided_pid).strip():
             pid_str = str(provided_pid).strip()
@@ -1129,7 +1134,6 @@ def post_claim():
             except Exception:
                 new_patient_id = 99999001
 
-        # Policy_Number
         provided_pol = payload.get("Policy_Number") or payload.get("policy_number")
         if provided_pol and str(provided_pol).strip():
             new_policy_num = str(provided_pol).strip()
@@ -1139,7 +1143,6 @@ def post_claim():
         today_dt = datetime.now(timezone.utc)
         today_str = today_dt.strftime("%Y-%m-%d")
 
-        # Map canonical defaults for any dataset column that might be omitted in form
         field_defaults = {
             "Claim_Date": today_str,
             "Service_Date": payload.get("Claim_Date") or today_str,
@@ -1201,8 +1204,7 @@ def post_claim():
             except ValueError as ve:
                 return jsonify(error=f"Invalid value for column '{col}': {ve}"), 400
 
-        # Append to DATA in memory
-        new_row_id = int(len(DATA))
+                new_row_id = int(DATA.index.max()) + 1 if len(DATA) else 0
         new_row["row_id"] = new_row_id
 
         new_df = pd.DataFrame([new_row], index=[new_row_id])
@@ -1528,7 +1530,7 @@ def predict_status():
         X = prepare(records, STATUS_EXPECTED_COLUMNS, STATUS_NUMERIC, STATUS_CATEGORICAL)
         probs = status_model.predict_proba(X)
         preds = probs.argmax(axis=1)
-    except Exception as exc:           # bad values the model cannot handle
+    except Exception as exc:  # bad values the model cannot handle
         return jsonify(error=f"Could not score the claim(s): {exc}"), 422
 
     classes = list(status_label_encoder.classes_)
@@ -1552,7 +1554,10 @@ def api_stats():
     if not has_filters and not no_cache and "stats" in _cache:
         return jsonify(_cache["stats"])
     filtered = _filter_df(DATA, request.args) if has_filters else DATA
-    stats = build_stats(filtered)
+    try:
+        stats = build_stats(filtered)
+    except RuntimeError as exc:
+        return jsonify(error=str(exc)), 503
     if not has_filters and not no_cache:
         _cache["stats"] = stats
     return jsonify(stats)
@@ -1727,4 +1732,4 @@ def api_top_claims():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=5000, debug=os.environ.get("FLASK_DEBUG") == "1")

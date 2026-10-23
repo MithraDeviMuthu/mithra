@@ -50,7 +50,8 @@ drop_columns = [
     "Claim_ID",
     "Patient_ID",
     "Policy_Number",
-    "Processing_Days"   # known only after processing -> leaks the label
+    "Processing_Days",
+    "Is_Fraudulent"      # known only after processing -> leaks the label
 ]
 
 X = df.drop(
