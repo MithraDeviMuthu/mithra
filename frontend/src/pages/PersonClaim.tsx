@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   IconUser,
   IconSearch,
@@ -16,35 +16,39 @@ import { Loading } from "../components/Loading";
 import { ErrorState } from "../components/ErrorState";
 
 export const PersonClaim: React.FC = () => {
-  const [identifier, setIdentifier] = useState<string>("1001");
+  const [identifier, setIdentifier] = useState<string>("");
   const [searching, setSearching] = useState<boolean>(false);
   const [results, setResults] = useState<PersonSearchResult[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [selectedPatientId, setSelectedPatientId] = useState<number | string | null>(null);
   const [patientClaims, setPatientClaims] = useState<Record<string, unknown>[]>([]);
   const [loadingClaims, setLoadingClaims] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = identifier.trim();
-    if (!q) return;
+  const handleSearch = async (e?: React.FormEvent, overrideId?: string) => {
+    if (e) e.preventDefault();
+    const q = overrideId !== undefined ? overrideId.trim() : identifier.trim();
 
     setSearching(true);
     setError(null);
     setResults([]);
-    setSelectedPatientId(null);
+    setSelectedPatientId(q ? q : null);
     setPatientClaims([]);
 
     try {
-      const res = await searchPerson(q);
-      if (res.results.length === 0) {
-        setError(`No verified patient or policy record matched "${q}".`);
-      } else {
-        setResults(res.results);
-        // Automatically load claims for the first patient
-        if (res.results[0]) {
-          loadPatientClaims(res.results[0].patient_id);
+      const claimsRes = await getPersonClaims(q);
+      setPatientClaims(claimsRes.claims);
+
+      if (q) {
+        try {
+          const personRes = await searchPerson(q);
+          setResults(personRes.results);
+        } catch {
+          setResults([]);
         }
+      }
+
+      if (claimsRes.claims.length === 0) {
+        setError(q ? `No claims found for Patient ID "${q}".` : "No claims found in database.");
       }
     } catch (err) {
       setError(
@@ -55,7 +59,11 @@ export const PersonClaim: React.FC = () => {
     }
   };
 
-  const loadPatientClaims = async (patientId: number) => {
+  useEffect(() => {
+    void handleSearch();
+  }, []);
+
+  const loadPatientClaims = async (patientId: number | string) => {
     setSelectedPatientId(patientId);
     setLoadingClaims(true);
     try {
@@ -95,13 +103,13 @@ export const PersonClaim: React.FC = () => {
                 type="text"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="Enter Patient ID (e.g. 1001, 1002) or Policy Number..."
+                placeholder="Enter Patient ID (e.g. 67349080) or leave blank for all claims..."
                 className="w-full pl-10 pr-4 py-2.5 text-xs rounded-lg bg-bg-card-alt border border-border text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
               />
             </div>
             <button
               type="submit"
-              disabled={searching || !identifier.trim()}
+              disabled={searching}
               className="inline-flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-semibold rounded-lg bg-accent text-bg-page hover:bg-accent/90 transition-colors disabled:opacity-50"
             >
               <IconSearch size={15} />
@@ -111,11 +119,14 @@ export const PersonClaim: React.FC = () => {
 
           <div className="flex items-center gap-2 text-[11px] text-text-muted pt-1">
             <span>Quick Test Identifiers:</span>
-            {["1001", "1002", "1003", "1004"].map((id) => (
+            {["67349080", "85973291", "62454860", "58632240"].map((id) => (
               <button
                 key={id}
                 type="button"
-                onClick={() => setIdentifier(id)}
+                onClick={() => {
+                  setIdentifier(id);
+                  void handleSearch(undefined, id);
+                }}
                 className="px-2 py-0.5 rounded bg-bg-card-alt border border-border text-text-secondary hover:text-text-primary transition-colors"
               >
                 #{id}
@@ -137,9 +148,10 @@ export const PersonClaim: React.FC = () => {
       )}
 
       {/* Results Section */}
-      {!searching && results.length > 0 && (
+      {!searching && (results.length > 0 || patientClaims.length > 0) && (
         <div className="space-y-6">
           {/* Matched Patients Summary Cards */}
+          {results.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {results.map((patient) => {
               const isSelected = selectedPatientId === patient.patient_id;
@@ -200,17 +212,18 @@ export const PersonClaim: React.FC = () => {
               );
             })}
           </div>
+          )}
 
-          {/* Claims History for Active Patient */}
-          {selectedPatientId && (
+          {/* Claims History Table */}
+          {(selectedPatientId || patientClaims.length > 0) && (
             <div className="card p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-border pb-4">
                 <div>
                   <h3 className="text-base font-semibold text-text-primary">
-                    Historical Claims for Patient #{selectedPatientId}
+                    {selectedPatientId ? `Historical Claims for Patient #${selectedPatientId}` : "All Claims History"}
                   </h3>
                   <p className="text-xs text-text-secondary mt-0.5">
-                    {patientClaims.length} total claim records linked to this verified identity.
+                    {patientClaims.length} total claim records linked to this {selectedPatientId ? "verified identity" : "query"}.
                   </p>
                 </div>
               </div>

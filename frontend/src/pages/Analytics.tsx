@@ -44,7 +44,7 @@ export const Analytics: React.FC = () => {
     return () => {
       window.removeEventListener("claimSaved", handleClaimSaved);
     };
-  }, [filters]);
+  }, [filters.start_date, filters.end_date, filters]);
 
   if (loading) {
     return (
@@ -85,7 +85,6 @@ export const Analytics: React.FC = () => {
         initialFilters={filters}
         onFilterChange={(newFilters) => {
           setFilters(newFilters);
-          void loadData(newFilters, Date.now());
         }}
       />
 

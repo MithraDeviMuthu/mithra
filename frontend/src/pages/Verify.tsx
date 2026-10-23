@@ -29,7 +29,7 @@ export const Verify: React.FC = () => {
       const res = await searchClaim(id);
       if (!res.claim) {
         setLookupMessage({
-          text: `No claim found with ID #${id}`,
+          text: res.message || `No claim found with ID #${id}`,
           isError: true,
         });
       } else {

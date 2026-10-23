@@ -307,6 +307,14 @@ def _serialise_claim_row(row):
                 payload[key] = str(pd.to_datetime(payload[key]).date())
             except Exception:
                 pass
+    for id_key in ("Claim_ID", "Patient_ID"):
+        if id_key in payload and payload[id_key] is not None:
+            try:
+                val_f = float(payload[id_key])
+                if val_f.is_integer():
+                    payload[id_key] = int(val_f)
+            except (ValueError, TypeError):
+                pass
     if "row_id" in row and pd.notna(row["row_id"]):
         payload["row_id"] = int(row["row_id"])
     elif hasattr(row, "name") and isinstance(row.name, (int, np.integer)):
@@ -396,13 +404,16 @@ RISING_THRESHOLD = 0.10          # flag "Rising" if latest period's rate is this
 
 def _filter_df(df, args):
     """Filter a dataframe by optional date range, claim amount range, and patient age range."""
-    filtered = df
+    filtered = df.copy()
     start_date = args.get("start_date") or args.get("date_min")
     end_date = args.get("end_date") or args.get("date_max")
     min_amount = args.get("min_amount") or args.get("amount_min")
     max_amount = args.get("max_amount") or args.get("amount_max")
     min_age = args.get("min_age") or args.get("age_min")
     max_age = args.get("max_age") or args.get("age_max")
+
+    if "Claim_Date" in filtered.columns:
+        filtered["Claim_Date"] = pd.to_datetime(filtered["Claim_Date"], errors="coerce")
 
     if start_date:
         try:
@@ -730,28 +741,36 @@ def api_person_search():
     if missing:
         return missing
     identifier = (request.args.get("identifier") or request.args.get("patient_id") or request.args.get("policy_number") or "").strip()
-    if not identifier:
-        return jsonify(error="Provide a Patient_ID or Policy_Number to search for."), 400
     df = DATA.copy()
-    q = str(identifier)
-    mask = (df["Patient_ID"].astype(str) == q) | (df["Policy_Number"].astype(str) == q)
-    matches = df.loc[mask].copy()
+    if not identifier:
+        matches = df
+    else:
+        q = str(identifier).strip()
+        patient_col_str = df["Patient_ID"].astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
+        policy_col_str = df["Policy_Number"].astype(str).str.strip()
+        mask = (patient_col_str == q) | (policy_col_str == q)
+        try:
+            mask = mask | (df["Patient_ID"] == float(q))
+        except (ValueError, TypeError):
+            pass
+        matches = df.loc[mask].copy()
+
     if matches.empty:
-        return jsonify(results=[], count=0, identifier=q, message="No verified patient record matched that identifier."), 200
+        return jsonify(results=[], count=0, identifier=identifier, message="No verified patient record matched that identifier."), 200
 
     results = []
     for patient_id, group in matches.groupby("Patient_ID", dropna=False):
         group = group.sort_values("Claim_Date")
         total_claims = float(group["Claim_Amount"].sum())
         results.append({
-            "patient_id": int(patient_id),
+            "patient_id": int(float(patient_id)) if pd.notna(patient_id) else None,
             "policy_numbers": [str(v) for v in group["Policy_Number"].dropna().astype(str).unique().tolist()],
             "claim_count": int(len(group)),
             "total_claim_amount": round(total_claims, 2),
             "latest_claim_date": str(group["Claim_Date"].max().date()) if not group["Claim_Date"].dropna().empty else None,
             "status_breakdown": {k: int(v) for k, v in group["Claim_Status"].fillna("Unknown").value_counts().to_dict().items()},
         })
-    return jsonify(results=results, count=len(results), identifier=q)
+    return jsonify(results=results, count=len(results), identifier=identifier)
 
 
 @app.get("/api/person-claims")
@@ -759,11 +778,21 @@ def api_person_claims():
     missing = need_data()
     if missing:
         return missing
-    patient_id = request.args.get("patient_id", "").strip()
+    patient_id = (request.args.get("patient_id") or request.args.get("identifier") or "").strip()
     if not patient_id:
-        return jsonify(error="patient_id is required."), 400
-    mask = DATA["Patient_ID"].astype(str) == patient_id
-    matches = DATA.loc[mask].copy().sort_values("Claim_Date")
+        matches = DATA.copy().sort_values("Claim_Date", ascending=False)
+        claims = [_serialise_claim_row(row) for _, row in matches.iterrows()]
+        return jsonify(claims=claims, count=len(claims), patient_id="", total_claim_amount=round(float(matches["Claim_Amount"].sum()), 2))
+
+    pid_clean = patient_id.strip()
+    patient_col_str = DATA["Patient_ID"].astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
+    mask = patient_col_str == pid_clean
+    try:
+        mask = mask | (DATA["Patient_ID"] == float(pid_clean))
+    except (ValueError, TypeError):
+        pass
+
+    matches = DATA.loc[mask].copy().sort_values("Claim_Date", ascending=False)
     if matches.empty:
         return jsonify(claims=[], count=0, patient_id=patient_id, message="No claims are linked to that patient identifier."), 200
     claims = [_serialise_claim_row(row) for _, row in matches.iterrows()]
@@ -775,12 +804,21 @@ def api_claim_search():
     missing = need_data()
     if missing:
         return missing
-    claim_id = request.args.get("claim_id", "").strip()
+    claim_id = (request.args.get("claim_id") or request.args.get("id") or "").strip()
     if not claim_id:
-        return jsonify(error="claim_id is required."), 400
-    matches = DATA.loc[DATA["Claim_ID"].astype(str) == claim_id].copy()
+        return jsonify(claim=None, count=0, claim_id="", message="Claim ID is required."), 200
+
+    cid_str = claim_id.strip()
+    claim_col_str = DATA["Claim_ID"].astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
+    mask = claim_col_str == cid_str
+    try:
+        mask = mask | (DATA["Claim_ID"] == float(cid_str))
+    except (ValueError, TypeError):
+        pass
+
+    matches = DATA.loc[mask].copy()
     if matches.empty:
-        return jsonify(claim=None, count=0, claim_id=claim_id, message="No claim matched that identifier."), 200
+        return jsonify(claim=None, count=0, claim_id=claim_id, message=f"No claim found with ID #{claim_id}"), 200
     claim = _serialise_claim_row(matches.iloc[0])
     return jsonify(claim=claim, count=1, claim_id=claim_id)
 
