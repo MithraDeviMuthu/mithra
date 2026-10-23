@@ -712,3 +712,40 @@ time,user,row_id,field,old,new
 2026-10-21T15:37:23.829689+00:00,admin,19960,Provider_Type,Hospital Provider Specialty,Hospital Provider Specialty
 2026-10-21T15:37:23.834469+00:00,admin,19960,Admission_Type,Emergency,Emergency
 2026-10-21T15:37:23.837276+00:00,admin,19960,Length_of_Stay_Days,4.0,4
+2026-10-23T07:05:15.364186+00:00,admin,19961,Patient_ID,None,67349080099
+2026-10-23T07:05:15.365714+00:00,admin,19961,Policy_Number,None,XAI9561949889
+2026-10-23T07:05:15.367589+00:00,admin,19961,Claim_ID,None,18874765
+2026-10-23T07:05:15.368927+00:00,admin,19961,Claim_Date,None,2021-06-16 00:00:00
+2026-10-23T07:05:15.371182+00:00,admin,19961,Service_Date,None,2021-01-05 00:00:00
+2026-10-23T07:05:15.372594+00:00,admin,19961,Policy_Expiration_Date,None,2024-11-20 00:00:00
+2026-10-23T07:05:15.373796+00:00,admin,19961,Claim_Amount,None,50000.0
+2026-10-23T07:05:15.375116+00:00,admin,19961,Patient_Age,None,28
+2026-10-23T07:05:15.376677+00:00,admin,19961,Patient_Gender,None,Female
+2026-10-23T07:05:15.377742+00:00,admin,19961,Patient_City,None,Houston
+2026-10-23T07:05:15.379196+00:00,admin,19961,Patient_State,None,WI
+2026-10-23T07:05:15.381960+00:00,admin,19961,Hospital_ID,None,53
+2026-10-23T07:05:15.382952+00:00,admin,19961,Provider_Type,None,Hospital Provider Specialty
+2026-10-23T07:05:15.383808+00:00,admin,19961,Provider_Specialty,None,Cardiology
+2026-10-23T07:05:15.384548+00:00,admin,19961,Provider_City,None,Los Angeles
+2026-10-23T07:05:15.385636+00:00,admin,19961,Provider_State,None,WA
+2026-10-23T07:05:15.386747+00:00,admin,19961,Diagnosis_Code,None,A09
+2026-10-23T07:05:15.387938+00:00,admin,19961,Procedure_Code,None,93610
+2026-10-23T07:05:15.388858+00:00,admin,19961,Number_of_Procedures,None,2
+2026-10-23T07:05:15.390277+00:00,admin,19961,Admission_Type,None,Emergency
+2026-10-23T07:05:15.391122+00:00,admin,19961,Discharge_Type,None,Home
+2026-10-23T07:05:15.391929+00:00,admin,19961,Length_of_Stay_Days,None,47
+2026-10-23T07:05:15.392931+00:00,admin,19961,Service_Type,None,Inpatient
+2026-10-23T07:05:15.394005+00:00,admin,19961,Deductible_Amount,None,3440.06
+2026-10-23T07:05:15.395299+00:00,admin,19961,CoPay_Amount,None,824.59
+2026-10-23T07:05:15.396586+00:00,admin,19961,Number_of_Previous_Claims_Patient,None,0
+2026-10-23T07:05:15.397688+00:00,admin,19961,Number_of_Previous_Claims_Provider,None,16
+2026-10-23T07:05:15.399031+00:00,admin,19961,Provider_Patient_Distance_Miles,None,939.08
+2026-10-23T07:05:15.400415+00:00,admin,19961,Claim_Submitted_Late,None,True
+2026-10-23T07:05:15.401449+00:00,admin,19961,Is_Fraudulent,None,0
+2026-10-23T07:05:15.402376+00:00,admin,19961,Policy_Start_Date,None,2020-11-21 00:00:00
+2026-10-23T07:05:15.403653+00:00,admin,19961,Policy_Type,None,Standard
+2026-10-23T07:05:15.404661+00:00,admin,19961,Patient_Income_Bracket,None,Low
+2026-10-23T07:05:15.405720+00:00,admin,19961,Network_Provider,None,in-network
+2026-10-23T07:05:15.406896+00:00,admin,19961,Premium_Amount,None,12893.34
+2026-10-23T07:05:15.407827+00:00,admin,19961,Claim_Status,None,Approved
+2026-10-23T07:05:15.408822+00:00,admin,19961,Processing_Days,None,14

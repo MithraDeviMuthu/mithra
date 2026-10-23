@@ -171,6 +171,7 @@ export const Verify: React.FC = () => {
       {/* Shared Claim Form & Results Panel */}
       <ClaimScoreForm
         allowModeSwitch={true}
+        showSaveButton={false}
         initialValues={formData}
         initialOptionalLabels={{
           claimId: sampleMeta?.claim_id

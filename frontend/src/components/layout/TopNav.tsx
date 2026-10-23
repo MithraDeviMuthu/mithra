@@ -15,7 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: "Review", path: "/review" },
   { name: "Insights", path: "/insights" },
   { name: "Analytics", path: "/analytics" },
-  { name: "Check a claim", path: "/check-claim" },
+  { name: "New Claim", path: "/check-claim" },
   { name: "Patterns", path: "/patterns" },
   { name: "Claim extraction", path: "/claim-extraction" },
 ];

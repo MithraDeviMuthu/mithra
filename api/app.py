@@ -330,6 +330,9 @@ DATA_SOURCE_PATH = None
 INITIAL_TEST_INDEX = set()
 ORIGINAL_DATA_COLUMNS = []
 
+# Columns that must be numeric. A CSV value like "10.0" read as text breaks int().
+NUMERIC_DATA_COLUMNS = ("Number_of_Procedures", "Patient_Age", "Hospital_ID", "Length_of_Stay_Days")
+
 
 def load_data():
     global DATA_SOURCE_PATH, INITIAL_TEST_INDEX, ORIGINAL_DATA_COLUMNS
@@ -342,6 +345,9 @@ def load_data():
                 df = df[df["Claim_ID"].notna() & (df["Claim_ID"].astype(str).str.strip() != "")].copy()
             df["Is_Fraudulent"] = pd.to_numeric(df["Is_Fraudulent"], errors="coerce").fillna(0).astype(int)
             df["Claim_Date"] = pd.to_datetime(df["Claim_Date"], errors="coerce")
+            for c in NUMERIC_DATA_COLUMNS:
+                if c in df.columns:
+                    df[c] = pd.to_numeric(df[c], errors="coerce")
             df["row_id"] = df.index.astype(int)
             try:
                 _, test_index = train_test_split(
@@ -498,7 +504,7 @@ def build_provider_risk(df=None):
                 trend = "Stable"
 
         rows.append({
-            "hospital_id": int(hospital_id),
+            "hospital_id": int(float(hospital_id)),
             "provider_type": prov["provider_type"],
             "specialty": prov["specialty"],
             "total_claims": int(prov["total_claims"]),
@@ -642,7 +648,10 @@ def build_stats(df=None):
                          ["0-199", "200-399", "400-599", "600-799", "800+"])
     by_amount = binned(df, "Claim_Amount", [0, 500_000, 1_000_000, 1_500_000, 2_000_000, 10**9],
                        ["<0.5M", "0.5-1M", "1-1.5M", "1.5-2M", "2M+"])
-    by_procedures = rate_rows(df.assign(_p=df["Number_of_Procedures"].astype(int)), "_p", min_n=1)
+    # FIX: values like "10.0" (text) made .astype(int) crash -> convert to numeric first
+    by_procedures = rate_rows(
+        df.assign(_p=pd.to_numeric(df["Number_of_Procedures"], errors="coerce").fillna(0).astype(int)),
+        "_p", min_n=1)
     by_procedures = sorted(by_procedures, key=lambda r: int(r["label"]))
 
     total_amount = float(df["Claim_Amount"].sum())
@@ -741,14 +750,14 @@ def api_person_search():
     if missing:
         return missing
     identifier = (request.args.get("identifier") or request.args.get("patient_id") or request.args.get("policy_number") or "").strip()
-    df = DATA.copy()
+    df = DATA
     if not identifier:
-        matches = df
+        matches = df.sort_values("Claim_Date", ascending=False).head(200)   # FIX: blank search must not scan every patient
     else:
         q = str(identifier).strip()
         patient_col_str = df["Patient_ID"].astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
-        policy_col_str = df["Policy_Number"].astype(str).str.strip()
-        mask = (patient_col_str == q) | (policy_col_str == q)
+        policy_col_str = df["Policy_Number"].astype(str).str.strip().str.lower()   # FIX: case-insensitive
+        mask = (patient_col_str == q) | (policy_col_str == q.lower())
         try:
             mask = mask | (df["Patient_ID"] == float(q))
         except (ValueError, TypeError):
@@ -780,13 +789,14 @@ def api_person_claims():
         return missing
     patient_id = (request.args.get("patient_id") or request.args.get("identifier") or "").strip()
     if not patient_id:
-        matches = DATA.copy().sort_values("Claim_Date", ascending=False)
+        matches = DATA.sort_values("Claim_Date", ascending=False).head(200)   # FIX: cap blank search
         claims = [_serialise_claim_row(row) for _, row in matches.iterrows()]
         return jsonify(claims=claims, count=len(claims), patient_id="", total_claim_amount=round(float(matches["Claim_Amount"].sum()), 2))
 
     pid_clean = patient_id.strip()
     patient_col_str = DATA["Patient_ID"].astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
-    mask = patient_col_str == pid_clean
+    policy_col_str = DATA["Policy_Number"].astype(str).str.strip().str.lower()   # FIX: also match policy numbers
+    mask = (patient_col_str == pid_clean) | (policy_col_str == pid_clean.lower())
     try:
         mask = mask | (DATA["Patient_ID"] == float(pid_clean))
     except (ValueError, TypeError):
@@ -1707,7 +1717,7 @@ def api_top_claims():
         "specialty": r.Provider_Specialty,
         "service_type": r.Service_Type,
         "claim_amount": round(float(r.Claim_Amount), 2),
-        "procedures": int(r.Number_of_Procedures),
+        "procedures": int(float(r.Number_of_Procedures)),   # FIX: safe for "10.0"
         "distance_miles": round(float(r.Provider_Patient_Distance_Miles), 1),
         "probability": round(float(r.fraud_prob), 4),
         "risk_level": risk_level(r.fraud_prob),
