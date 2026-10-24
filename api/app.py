@@ -117,7 +117,22 @@ def train_default_model():
         ):
             script = PROJECT_ROOT / "ml" / script_name
             if not model_path.exists() and script.exists():
-                runpy.run_path(str(script), run_name="__main__")
+                try:
+                    runpy.run_path(str(script), run_name="__main__")
+                except SystemExit as exc:
+                    # A training script may intentionally skip itself (e.g. required
+                    # label columns are missing from the data) via sys.exit(0). Only
+                    # a non-zero/failure exit should be treated as a real problem.
+                    if exc.code not in (None, 0):
+                        if script_name == "claim_status_model.py":
+                            print(f"Warning: claim-status model training failed: {exc}")
+                        else:
+                            raise
+                except Exception as exc:
+                    if script_name == "claim_status_model.py":
+                        print(f"Warning: claim-status model training failed: {exc}")
+                    else:
+                        raise
     finally:
         os.chdir(previous)
     return MODEL_PATH.exists()
@@ -331,10 +346,25 @@ def prepare(records, expected_columns=None, numeric=None, categorical=None):
 
     df = df.reindex(columns=expected_columns)          # missing fields become NaN
 
+    # Boolean-like numeric fields (e.g. Claim_Submitted_Late) arrive from forms/JSON
+    # as "True"/"False"/"yes"/"no" text, which pd.to_numeric can't parse and would
+    # silently turn into NaN. Normalize those to 1/0 first so the model actually
+    # sees the value instead of an imputed default.
+    bool_like_map = {
+        "true": 1, "yes": 1, "1": 1, "y": 1,
+        "false": 0, "no": 0, "0": 0, "n": 0,
+    }
     for col in numeric:
+        if col in BOOLEAN_LIKE_NUMERIC_FIELDS:
+            df[col] = df[col].map(
+                lambda v: bool_like_map.get(str(v).strip().lower(), v)
+                if not isinstance(v, bool) else int(v)
+            )
         df[col] = pd.to_numeric(df[col], errors="coerce").astype(float)
+
     for col in categorical:
         df[col] = df[col].astype(object).where(df[col].isna(), df[col].astype(str))
+
     return df
 
 
@@ -387,7 +417,9 @@ ORIGINAL_DATA_COLUMNS = []
 
 # Columns that must be numeric. A CSV value like "10.0" read as text breaks int().
 NUMERIC_DATA_COLUMNS = ("Number_of_Procedures", "Patient_Age", "Hospital_ID", "Length_of_Stay_Days")
-
+# Model-input columns that are logically booleans but may arrive from forms/JSON
+# as text ("True"/"False"/"yes"/"no") rather than an actual bool/0/1.
+BOOLEAN_LIKE_NUMERIC_FIELDS = {"Claim_Submitted_Late", "Network_Provider"}
 
 def load_data():
     global DATA_SOURCE_PATH, INITIAL_TEST_INDEX, ORIGINAL_DATA_COLUMNS
@@ -405,7 +437,7 @@ def load_data():
             for c in NUMERIC_DATA_COLUMNS:
                 if c in df.columns:
                     df[c] = pd.to_numeric(df[c], errors="coerce")
-            df["row_id"] = df.index.astype(int)
+            df = df.drop(columns=["row_id"], errors="ignore")
             test_index_path = PROJECT_ROOT / "ml" / "test_index.json"
             if test_index_path.exists():
                 INITIAL_TEST_INDEX = set(json.loads(
@@ -424,6 +456,21 @@ def load_data():
 
 
 DATA = load_data()
+REQUIRED_COLUMNS = [
+    "Claim_Status",
+    "Premium_Amount",
+    "Policy_Type",
+    "Patient_Income_Bracket",
+    "Network_Provider",
+    "Processing_Days",
+    "Policy_Start_Date",
+]
+missing_startup_columns = [
+    column for column in REQUIRED_COLUMNS
+    if DATA is None or column not in DATA.columns
+]
+if missing_startup_columns:
+    print(f"Warning: dataset is missing required columns: {', '.join(missing_startup_columns)}")
 _cache = {}
 
 
@@ -431,6 +478,17 @@ def need_data():
     if DATA is None:
         return jsonify(error="Cleaned data file not found. Put it in data/processed/ "
                              "or set the DATA_PATH environment variable."), 503
+    return None
+
+
+def missing_columns_error(cols):
+    missing = [column for column in cols if DATA is None or column not in DATA.columns]
+    if missing:
+        return jsonify(
+            error=f"Dataset is missing required columns: {', '.join(missing)}; "
+                  "replace data/raw/synthetic_health_claims.csv with the full 37-column file "
+                  "and re-run ml/data_cleaning.py."
+        ), 503
     return None
 
 
@@ -809,6 +867,9 @@ def api_person_search():
     missing = need_data()
     if missing:
         return missing
+    missing = missing_columns_error(["Claim_Status"])
+    if missing:
+        return missing
     identifier = (request.args.get("identifier") or request.args.get("patient_id") or request.args.get("policy_number") or "").strip()
     df = DATA
     if not identifier:
@@ -847,6 +908,9 @@ def api_person_claims():
     missing = need_data()
     if missing:
         return missing
+    missing = missing_columns_error(["Claim_Status"])
+    if missing:
+        return missing
     patient_id = (request.args.get("patient_id") or request.args.get("identifier") or "").strip()
     if not patient_id:
         matches = DATA.sort_values("Claim_Date", ascending=False).head(200)   # FIX: cap blank search
@@ -872,6 +936,9 @@ def api_person_claims():
 @app.get("/api/claim-search")
 def api_claim_search():
     missing = need_data()
+    if missing:
+        return missing
+    missing = missing_columns_error(["Claim_Status"])
     if missing:
         return missing
     claim_id = (request.args.get("claim_id") or request.args.get("id") or "").strip()
@@ -1036,7 +1103,11 @@ def _match_dtype(col, value):
 
 def _sync_dataset_to_csv():
     global DATA_SOURCE_PATH
-    if DATA_SOURCE_PATH is None:
+    if DATA_SOURCE_PATH is None or DATA is None:
+        return
+    missing_columns = [column for column in REQUIRED_COLUMNS if column not in DATA.columns]
+    if missing_columns:
+        print(f"Warning: refusing to write live dataset; missing required columns: {', '.join(missing_columns)}")
         return
     live_path = PROJECT_ROOT / "data" / "processed" / "health_claims_live.csv"
     live_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1702,6 +1773,12 @@ def api_stats():
     missing = need_data()
     if missing:
         return missing
+    missing = missing_columns_error([
+        "Premium_Amount", "Claim_Status", "Policy_Type",
+        "Patient_Income_Bracket", "Network_Provider",
+    ])
+    if missing:
+        return missing
     has_filters = any(request.args.get(k) for k in ("start_date", "end_date", "min_amount", "max_amount", "min_age", "max_age"))
     no_cache = bool(request.args.get("_t"))
     if not has_filters and not no_cache and "stats" in _cache:
@@ -1719,6 +1796,12 @@ def api_stats():
 @app.get("/api/provider-risk")
 def api_provider_risk():
     missing = need_data()
+    if missing:
+        return missing
+    missing = missing_columns_error([
+        "Premium_Amount", "Claim_Status", "Policy_Type",
+        "Patient_Income_Bracket", "Network_Provider",
+    ])
     if missing:
         return missing
     has_filters = any(request.args.get(k) for k in ("start_date", "end_date", "min_amount", "max_amount", "min_age", "max_age"))
@@ -1765,6 +1848,12 @@ def api_provider_risk():
 @app.get("/api/loss-ratio")
 def api_loss_ratio():
     missing = need_data()
+    if missing:
+        return missing
+    missing = missing_columns_error([
+        "Premium_Amount", "Claim_Status", "Policy_Type",
+        "Patient_Income_Bracket", "Network_Provider",
+    ])
     if missing:
         return missing
     has_filters = any(request.args.get(k) for k in ("start_date", "end_date", "min_amount", "max_amount", "min_age", "max_age"))
@@ -1816,6 +1905,12 @@ def build_analytics(df=None):
 @app.get("/api/analytics")
 def api_analytics():
     missing = need_data()
+    if missing:
+        return missing
+    missing = missing_columns_error([
+        "Premium_Amount", "Claim_Status", "Policy_Type",
+        "Patient_Income_Bracket", "Network_Provider",
+    ])
     if missing:
         return missing
     has_filters = any(request.args.get(k) for k in ("start_date", "end_date", "min_amount", "max_amount", "min_age", "max_age"))

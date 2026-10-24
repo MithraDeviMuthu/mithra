@@ -74,6 +74,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   ) {
     // Subtle amber / accent tint for in-between review states
     variantClasses = "bg-[#252018] text-[#E0B26D] border-[#E0B26D]/30";
+  } else if (normalized === "unknown") {
+    variantClasses = "bg-bg-card-alt text-text-secondary border-border";
   } else {
     // Neutral (Stable, Inconclusive, Not enough history, etc.)
     variantClasses = "bg-bg-card-alt text-text-secondary border-border";

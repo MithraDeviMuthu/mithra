@@ -19,11 +19,12 @@ Saves:
     ml/claim_status_model.joblib
 """
 
+import numpy as np
 import pandas as pd
 from pathlib import Path
 import os
 import joblib
-
+import sys
 from sklearn.model_selection import train_test_split
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
@@ -42,7 +43,19 @@ data_path = Path(os.environ.get(
     "CLAIM_STATUS_DATA_PATH",
     "data/processed/health_claims_clean.csv",
 ))
+
 df = pd.read_csv(data_path)
+
+if "Claim_Status" not in df.columns:
+    print(
+        f"'Claim_Status' column not found in {data_path}. "
+        "The claim-status model needs labeled outcomes (Approved/Rejected/Under Review) "
+        "to train on, and the current data-cleaning pipeline does not produce that label. "
+        "Skipping claim-status model training; the API will fall back to its "
+        "fraud-based status heuristic instead."
+    )
+    sys.exit(0)
+
 df = df.dropna(subset=["Claim_Status"])
 duplicate_claims = df.duplicated(subset="Claim_ID").sum()
 df = df.drop_duplicates(subset="Claim_ID", keep="first").copy()
@@ -91,7 +104,7 @@ for col in date_columns:
 # 5. Identify numeric and categorical features
 for col in ["Hospital_ID", "Procedure_Code"]:
     if col in X.columns:
-        X[col] = X[col].astype("string")
+        X[col] = X[col].astype(str).replace("nan", np.nan)
 
 numeric_columns = X.select_dtypes(
     include=["number", "bool"]

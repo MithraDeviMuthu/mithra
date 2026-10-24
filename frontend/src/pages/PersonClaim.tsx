@@ -274,7 +274,7 @@ export const PersonClaim: React.FC = () => {
                             ${Number(claim.Claim_Amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </td>
                           <td className="py-2.5 px-3">
-                            <StatusBadge status={String(claim.Claim_Status || "Under Review")} />
+                            <StatusBadge status={claim.Claim_Status == null ? "Unknown" : String(claim.Claim_Status)} />
                           </td>
                           <td className="py-2.5 px-3">
                             {claim.Is_Fraudulent ? (

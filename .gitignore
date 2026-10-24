@@ -5,6 +5,7 @@ venv/
 .env
 .DS_Store
 *.log
+*.bak
 *.tsbuildinfo
 .pytest_cache/
 .vscode/

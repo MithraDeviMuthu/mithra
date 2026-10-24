@@ -54,7 +54,7 @@ for col in date_columns:
 # 4. Identify numeric and categorical features
 for col in ["Hospital_ID", "Procedure_Code"]:
     if col in X.columns:
-        X[col] = X[col].astype("string")
+        X[col] = X[col].astype(str).replace("nan", np.nan)
 
 numeric_columns = X.select_dtypes(
     include=["number", "bool"]

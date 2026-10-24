@@ -3,6 +3,7 @@
 Fraud-risk scoring, claim adjudication, and portfolio analytics for health insurance claims.
 
 The included health-claims dataset is synthetic.
+The raw claims file includes `Claim_Status`, `Premium_Amount`, `Policy_Type`, `Patient_Income_Bracket`, `Network_Provider`, `Policy_Start_Date`, and `Processing_Days`.
 API claim edits are saved to `data/processed/health_claims_live.csv`; model training continues to use the cleaned dataset.
 
 ## Architecture & Structure

@@ -79,14 +79,12 @@ df["Is_Fraudulent"] = (
 print("\nFraud label counts:")
 print(df["Is_Fraudulent"].value_counts(dropna=False))
 
-# 11. Save the cleaned dataset
+# 11. Display the supplied claim-status labels
+print("\nClaim_Status counts:")
+print(df["Claim_Status"].value_counts(dropna=False))
+
 output_dir = Path("data/processed")
 output_dir.mkdir(parents=True, exist_ok=True)
-
-df.to_csv(
-    output_dir / "health_claims_clean.csv",
-    index=False
-)
-
+df.to_csv(output_dir / "health_claims_clean.csv", index=False)
 print("\nFinal dataset shape:", df.shape)
 print("Cleaning completed successfully!")
