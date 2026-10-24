@@ -7,3 +7,4 @@ joblib
 pypdf
 python-docx
 shap
+python-dotenv

@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import json
 import joblib
 
 from sklearn.model_selection import train_test_split
@@ -51,6 +52,10 @@ for col in date_columns:
         X = X.drop(columns=[col])
 
 # 4. Identify numeric and categorical features
+for col in ["Hospital_ID", "Procedure_Code"]:
+    if col in X.columns:
+        X[col] = X[col].astype("string")
+
 numeric_columns = X.select_dtypes(
     include=["number", "bool"]
 ).columns.tolist()
@@ -142,6 +147,9 @@ print(confusion_matrix(y_test, predictions))
 # 11. Save the model together with its thresholds
 output_dir = Path("ml")
 output_dir.mkdir(parents=True, exist_ok=True)
+
+with (output_dir / "test_index.json").open("w", encoding="utf-8") as index_file:
+    json.dump(X_test.index.tolist(), index_file)
 
 joblib.dump(
     {"model": model, "threshold": THRESHOLD, "medium_threshold": MEDIUM},

@@ -2,6 +2,9 @@
 
 Fraud-risk scoring, claim adjudication, and portfolio analytics for health insurance claims.
 
+The included health-claims dataset is synthetic.
+API claim edits are saved to `data/processed/health_claims_live.csv`; model training continues to use the cleaned dataset.
+
 ## Architecture & Structure
 
 - `api/app.py`: Flask API server providing fraud scoring, multi-class claim status prediction, portfolio analytics, provider risk tracking, loss ratio analysis, claim extraction, duplicate detection, and anomaly detection.

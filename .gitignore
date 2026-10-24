@@ -5,6 +5,7 @@ venv/
 .env
 .DS_Store
 *.log
+*.tsbuildinfo
 .pytest_cache/
 .vscode/
 data/rag/
@@ -13,3 +14,4 @@ frontend/dist/
 frontend/node_modules/
 ml/*.joblib
 *.joblib
+data/processed/*.original.csv

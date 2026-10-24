@@ -37,15 +37,21 @@ import shutil
 import sys
 import tempfile
 import threading
+import time
 import traceback
 import uuid
 from io import StringIO
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import joblib
 import numpy as np
 import pandas as pd
 from flask import Flask, jsonify, request, send_from_directory, session
+from flask.sessions import SecureCookieSessionInterface
 from sklearn.model_selection import train_test_split
 from werkzeug.exceptions import HTTPException, RequestEntityTooLarge
 
@@ -82,6 +88,7 @@ DASHBOARD_DIR = next((d for d in (PROJECT_ROOT / "frontend" / "dist", PROJECT_RO
                       if (d / "index.html").exists()), PROJECT_ROOT / "frontend" / "dist")
 DATA_CANDIDATES = [
     os.environ.get("DATA_PATH"),
+    PROJECT_ROOT / "data" / "processed" / "health_claims_live.csv",
     PROJECT_ROOT / "data" / "processed" / "health_claims_clean.csv",
     PROJECT_ROOT / "data" / "processed" / "claims_clean.csv",
 ]
@@ -90,8 +97,7 @@ DEFAULT_THRESHOLD = 0.30               # used if the saved model file has no thr
 DATE_COLUMNS = ["Claim_Date", "Service_Date", "Policy_Expiration_Date", "Policy_Start_Date"]
 MAX_BATCH = 1000
 MIN_GROUP = 100                        # hide chart groups with fewer claims than this
-# These two must match the train_test_split() call in your fraud_model.py. They let the
-# dashboard find the claims the model never saw during training.
+# Used only when ml/test_index.json is missing, for backwards compatibility.
 TEST_SIZE = 0.2
 RANDOM_STATE = 42
 
@@ -99,25 +105,25 @@ RANDOM_STATE = 42
 
 def train_default_model():
     """Create the local training artifacts lazily when the repo is freshly checked out."""
-    if MODEL_PATH.exists():
-        return True
     data_path = PROJECT_ROOT / "data" / "processed" / "health_claims_clean.csv"
     if not data_path.exists():
         return False
     previous = Path.cwd()
     try:
         os.chdir(PROJECT_ROOT)
-        for script in (PROJECT_ROOT / "ml" / "fraud_model.py", PROJECT_ROOT / "ml" / "claim_status_model.py"):
-            if script.exists() and not script.name.startswith("claim_status") and MODEL_PATH.exists():
-                continue
-            if script.exists() and script.name.startswith("claim_status") and STATUS_MODEL_PATH.exists():
-                continue
-            if script.exists():
+        for model_path, script_name in (
+            (MODEL_PATH, "fraud_model.py"),
+            (STATUS_MODEL_PATH, "claim_status_model.py"),
+        ):
+            script = PROJECT_ROOT / "ml" / script_name
+            if not model_path.exists() and script.exists():
                 runpy.run_path(str(script), run_name="__main__")
     finally:
         os.chdir(previous)
     return MODEL_PATH.exists()
 
+
+train_default_model()
 
 model = None
 THRESHOLD = float(os.environ.get("FRAUD_THRESHOLD", DEFAULT_THRESHOLD))
@@ -127,7 +133,7 @@ CATEGORICAL = []
 NUMERIC = []
 RAW_FIELDS = []
 
-if MODEL_PATH.exists() or train_default_model():
+if MODEL_PATH.exists():
     saved = joblib.load(MODEL_PATH)
     if isinstance(saved, dict):            # {"model": pipeline, "threshold": 0.3, "medium_threshold": 0.15}
         model = saved["model"]
@@ -180,7 +186,6 @@ if STATUS_MODEL_PATH.exists():
             STATUS_RAW_FIELDS.append(name)
 
 app = Flask(__name__)
-print(f"[startup] running {__file__} (dtype fix active)")
 app.config["MAX_CONTENT_LENGTH"] = MAX_FILE_BYTES + 1024 * 1024
 app.config["SECRET_KEY"] = os.environ.get("RAG_SESSION_SECRET")
 if not app.config["SECRET_KEY"]:
@@ -198,9 +203,19 @@ if not app.config["SECRET_KEY"]:
             app.config["SECRET_KEY"] = secret_path.read_text(encoding="ascii")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "").lower() in {
-    "1", "true", "yes",
-}
+app.config["SESSION_COOKIE_SECURE"] = (
+    os.environ.get("SESSION_COOKIE_SECURE", "").lower() in {"1", "true", "yes"}
+    if "SESSION_COOKIE_SECURE" in os.environ
+    else os.environ.get("FLASK_DEBUG") != "1"
+)
+
+
+class HostAwareSessionInterface(SecureCookieSessionInterface):
+    def get_cookie_secure(self, app):
+        return app.config["SESSION_COOKIE_SECURE"] and request.host.split(":", 1)[0] != "127.0.0.1"
+
+
+app.session_interface = HostAwareSessionInterface()
 RAG_STORE = RagStore(RAG_DATA_DIR)
 CLAIM_STORE = ClaimDocumentStore(CLAIM_DATA_DIR)
 if CORS:
@@ -222,6 +237,10 @@ if not APP_PASSWORD:
         "Set APP_USER and APP_PASSWORD before running the app."
     )
 OPEN_PATHS = {"/", "/health", "/api/login"}
+LOGIN_FAILURES = {}
+LOGIN_FAILURE_LOCK = threading.Lock()
+LOGIN_FAILURE_WINDOW = 10 * 60
+LOGIN_FAILURE_LIMIT = 5
 
 
 @app.before_request
@@ -236,10 +255,27 @@ def require_login():
 
 @app.post("/api/login")
 def login():
+    ip_address = request.remote_addr or "unknown"
+    now = time.monotonic()
     data = request.get_json(silent=True) or {}
-    user_ok = secrets.compare_digest(str(data.get("username", "")).encode(), APP_USER.encode())
-    pass_ok = secrets.compare_digest(str(data.get("password", "")).encode(), APP_PASSWORD.encode())
-    if not (user_ok and pass_ok):
+    with LOGIN_FAILURE_LOCK:
+        for address, attempts in list(LOGIN_FAILURES.items()):
+            recent = [attempt for attempt in attempts if now - attempt < LOGIN_FAILURE_WINDOW]
+            if recent:
+                LOGIN_FAILURES[address] = recent
+            else:
+                LOGIN_FAILURES.pop(address)
+        failures = LOGIN_FAILURES.get(ip_address, [])
+        if len(failures) >= LOGIN_FAILURE_LIMIT:
+            return jsonify(error="Too many failed login attempts. Try again later."), 429
+        user_ok = secrets.compare_digest(str(data.get("username", "")).encode(), APP_USER.encode())
+        pass_ok = secrets.compare_digest(str(data.get("password", "")).encode(), APP_PASSWORD.encode())
+        authenticated = user_ok and pass_ok
+        if authenticated:
+            LOGIN_FAILURES.pop(ip_address, None)
+        else:
+            LOGIN_FAILURES[ip_address] = failures + [now]
+    if not authenticated:
         return jsonify(error="Invalid username or password."), 401
     session["user"] = APP_USER
     return jsonify(ok=True, user=APP_USER)
@@ -370,7 +406,12 @@ def load_data():
                 if c in df.columns:
                     df[c] = pd.to_numeric(df[c], errors="coerce")
             df["row_id"] = df.index.astype(int)
-            try:
+            test_index_path = PROJECT_ROOT / "ml" / "test_index.json"
+            if test_index_path.exists():
+                INITIAL_TEST_INDEX = set(json.loads(
+                    test_index_path.read_text(encoding="utf-8")
+                ))
+            else:
                 _, test_index = train_test_split(
                     df.index,
                     test_size=TEST_SIZE,
@@ -378,8 +419,6 @@ def load_data():
                     stratify=df["Is_Fraudulent"]
                 )
                 INITIAL_TEST_INDEX = set(test_index)
-            except Exception:
-                INITIAL_TEST_INDEX = set()
             return df
     return None
 
@@ -999,6 +1038,8 @@ def _sync_dataset_to_csv():
     global DATA_SOURCE_PATH
     if DATA_SOURCE_PATH is None:
         return
+    live_path = PROJECT_ROOT / "data" / "processed" / "health_claims_live.csv"
+    live_path.parent.mkdir(parents=True, exist_ok=True)
     stem = DATA_SOURCE_PATH.stem
     ext = DATA_SOURCE_PATH.suffix
     original_backup = DATA_SOURCE_PATH.parent / f"{stem}.original{ext}"
@@ -1022,14 +1063,14 @@ def _sync_dataset_to_csv():
         df_to_save = df_to_save[ordered_cols + extra_cols]
 
     temp_fd, temp_path = tempfile.mkstemp(
-        dir=DATA_SOURCE_PATH.parent,
-        prefix=f"{stem}_temp_",
-        suffix=ext
+        dir=live_path.parent,
+        prefix=f"{live_path.stem}_temp_",
+        suffix=live_path.suffix
     )
     os.close(temp_fd)
     try:
         df_to_save.to_csv(temp_path, index=False)
-        os.replace(temp_path, DATA_SOURCE_PATH)
+        os.replace(temp_path, live_path)
     except PermissionError:
         # File may be open/locked by an external application like Excel on Windows.
         pass

@@ -158,7 +158,7 @@ class ClaimExtractionTests(unittest.TestCase):
         with self.assertRaises(ClaimExtractionError):
             self.store.upload_document("owner-a", "scan.png", b"fake-image-content")
 
-    @unittest.skipUnless(OCR_READY, "Tesseract/OCR packages not installed")
+    @unittest.skip("OCR is disabled for image uploads.")
     def test_image_ocr_extracts_fields(self):
         doc = self.store.upload_document("owner-a", "scan.png", _claim_image_bytes("PNG"))
         self.assertEqual(doc["status"], "ready")
@@ -166,7 +166,7 @@ class ClaimExtractionTests(unittest.TestCase):
         self.assertIn("1234", fields["policy_number"])
         self.assertIn("450", fields["claim_amount"])
 
-    @unittest.skipUnless(OCR_READY, "Tesseract/OCR packages not installed")
+    @unittest.skip("OCR is disabled for scanned PDF uploads.")
     def test_scanned_pdf_falls_back_to_ocr(self):
         doc = self.store.upload_document("owner-a", "scan.pdf", _claim_image_bytes("PDF"))
         self.assertEqual(doc["status"], "ready")

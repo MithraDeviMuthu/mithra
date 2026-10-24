@@ -1,5 +1,7 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
+const AUTH_STORAGE_KEY = "securescore_auth_token";
+const AGENT_STORAGE_KEY = "securescore_agent_name";
 
 function getApiBase(): string {
   if (!API_BASE) return "";
@@ -50,7 +52,7 @@ function buildUrl(path: string, params?: Record<string, string | number | boolea
   return `${url.pathname}${url.search}`;
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
+async function handleResponse<T>(response: Response, path: string): Promise<T> {
   const contentType = response.headers.get("content-type") || "";
   let data: unknown;
 
@@ -69,6 +71,12 @@ async function handleResponse<T>(response: Response): Promise<T> {
   }
 
   if (!response.ok) {
+    if (response.status === 401 && new URL(path, window.location.origin).pathname !== "/api/login") {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      localStorage.removeItem(AGENT_STORAGE_KEY);
+      window.location.assign("/");
+    }
+
     let message = `Request failed with status ${response.status}`;
     if (data && typeof data === "object") {
       const errorObj = data as Record<string, unknown>;
@@ -96,7 +104,7 @@ export const apiClient = {
       },
       credentials: "include",
     });
-    return handleResponse<T>(response);
+    return handleResponse<T>(response, path);
   },
 
   async post<T>(path: string, body?: unknown, params?: Record<string, string | number | boolean | undefined | null>): Promise<T> {
@@ -114,7 +122,7 @@ export const apiClient = {
       credentials: "include",
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    return handleResponse<T>(response);
+    return handleResponse<T>(response, path);
   },
 
   async patch<T>(path: string, body?: unknown, params?: Record<string, string | number | boolean | undefined | null>): Promise<T> {
@@ -132,7 +140,7 @@ export const apiClient = {
       credentials: "include",
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    return handleResponse<T>(response);
+    return handleResponse<T>(response, path);
   },
 
   async delete<T>(path: string, params?: Record<string, string | number | boolean | undefined | null>): Promise<T> {
@@ -144,7 +152,7 @@ export const apiClient = {
       },
       credentials: "include",
     });
-    return handleResponse<T>(response);
+    return handleResponse<T>(response, path);
   },
 
   async upload<T>(path: string, formData: FormData): Promise<T> {
@@ -157,9 +165,8 @@ export const apiClient = {
       credentials: "include",
       body: formData,
     });
-    return handleResponse<T>(response);
+    return handleResponse<T>(response, path);
   },
 };
 
 export default apiClient;
-

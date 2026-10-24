@@ -673,6 +673,11 @@ class ClaimDocumentStore:
                 "The selected document is empty."
             )
 
+        if extension == ".png" and not content.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise ClaimExtractionError("The uploaded PNG file is invalid.")
+        if extension in {".jpg", ".jpeg"} and not content.startswith(b"\xff\xd8\xff"):
+            raise ClaimExtractionError("The uploaded JPEG file is invalid.")
+
         if len(content) > MAX_CLAIM_FILE_BYTES:
             raise ClaimExtractionError(
                 "Documents must be 10 MB or smaller."

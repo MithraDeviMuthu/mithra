@@ -61,7 +61,7 @@ class PolicyVerificationTests(unittest.TestCase):
             {"policy_number": "POL-999", "service_date": "2024-08-11", "claim_amount": "$200"},
             self.store,
         )
-        self.assertEqual(result["status"], "verified")
+        self.assertEqual(result["status"], "mismatch")
         self.assertTrue(any(item["claim_field"] == "policy_number" for item in result["findings"]))
 
     def test_waiting_period_date_is_detected(self):

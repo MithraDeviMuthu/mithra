@@ -44,7 +44,12 @@ df = df[
     ~df["Claim_ID"].isin(conflicting_ids)
 ].copy()
 
-# 7. Convert date columns
+# 7. Keep one row per claim to prevent the same claim crossing train/test splits
+duplicate_claim_count = df.duplicated(subset="Claim_ID").sum()
+df = df.drop_duplicates(subset="Claim_ID", keep="first").copy()
+print("Duplicate Claim_ID rows removed:", duplicate_claim_count)
+
+# 8. Convert date columns
 date_columns = [
     "Claim_Date",
     "Service_Date",
@@ -56,7 +61,7 @@ for column in date_columns:
         df[column], errors="coerce"
     )
 
-# 8. Convert fraud labels into numbers
+# 9. Convert fraud labels into numbers
 df["Is_Fraudulent"] = (
     df["Is_Fraudulent"]
     .astype("string")
@@ -70,11 +75,11 @@ df["Is_Fraudulent"] = (
     })
 )
 
-# 9. Display fraud and non-fraud counts
+# 10. Display fraud and non-fraud counts
 print("\nFraud label counts:")
 print(df["Is_Fraudulent"].value_counts(dropna=False))
 
-# 10. Save the cleaned dataset
+# 11. Save the cleaned dataset
 output_dir = Path("data/processed")
 output_dir.mkdir(parents=True, exist_ok=True)
 
