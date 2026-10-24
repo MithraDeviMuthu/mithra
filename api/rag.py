@@ -23,6 +23,7 @@ CHUNK_OVERLAP = 200
 DEFAULT_TOP_K = 5
 MAX_TOP_K = 10
 DEFAULT_MIN_SCORE = 0.08
+SHORT_CHUNK_CHARS = 600  # chunks this short are returned whole as the answer
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".docx"}
 _vectorizer = HashingVectorizer(
     n_features=2**15,
@@ -54,6 +55,8 @@ def _chunk_text(text, page=None, section=None):
             if boundary > start:
                 end = boundary
         content = text[start:end].strip()
+        if content and section:
+            content = f"{section}\n{content}"  # keep heading inside the chunk
         if content:
             chunks.append({"page": page, "section": section, "content": content})
         if end >= len(text):
@@ -76,7 +79,11 @@ def _text_sections(text):
             len(stripped) <= 100 and any(char.isalpha() for char in stripped)
             and stripped == stripped.upper()
         )
-        if stripped and (heading_pattern.match(stripped) or is_uppercase_heading):
+        is_title_heading = (
+            len(stripped) <= 40 and ":" not in stripped and stripped.istitle()
+        )
+        if stripped and (heading_pattern.match(stripped) or is_uppercase_heading
+                         or is_title_heading):
             body = "\n".join(lines).strip()
             if body:
                 sections.append((heading, body))
@@ -120,7 +127,11 @@ def _extract(path, extension):
                 extracted_chars += len(text)
                 if extracted_chars > MAX_EXTRACTED_CHARS:
                     raise DocumentError("Extracted document text exceeds the 10 million character limit.")
-                chunks.extend(_chunk_text(text, page=page_number))
+                chunks.extend(
+                    chunk
+                    for section, body in _text_sections(text)
+                    for chunk in _chunk_text(body, page=page_number, section=section)
+                )
             return chunks
         except DocumentError:
             raise
@@ -218,7 +229,9 @@ def _answer_from_evidence(question, sources):
             (len(question_terms & _terms(sentence)), len(sentence), sentence.strip())
             for sentence in sentences if sentence.strip()
         ]
-        if scored:
+        if len(source["excerpt"]) <= SHORT_CHUNK_CHARS:
+            excerpt = source["excerpt"].strip()  # short chunk: return it whole
+        elif scored:
             best = max(scored, key=lambda item: (item[0], -item[1]))
             excerpt = best[2] if best[0] else source["excerpt"].strip()
         else:

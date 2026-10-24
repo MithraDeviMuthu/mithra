@@ -6,7 +6,4 @@ scikit-learn
 joblib
 pypdf
 python-docx
-pytesseract
-pillow
-pymupdf
 shap

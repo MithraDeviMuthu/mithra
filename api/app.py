@@ -37,6 +37,7 @@ import shutil
 import sys
 import tempfile
 import threading
+import traceback
 import uuid
 from io import StringIO
 from pathlib import Path
@@ -46,7 +47,7 @@ import numpy as np
 import pandas as pd
 from flask import Flask, jsonify, request, send_from_directory, session
 from sklearn.model_selection import train_test_split
-from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.exceptions import HTTPException, RequestEntityTooLarge
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -179,6 +180,7 @@ if STATUS_MODEL_PATH.exists():
             STATUS_RAW_FIELDS.append(name)
 
 app = Flask(__name__)
+print(f"[startup] running {__file__} (dtype fix active)")
 app.config["MAX_CONTENT_LENGTH"] = MAX_FILE_BYTES + 1024 * 1024
 app.config["SECRET_KEY"] = os.environ.get("RAG_SESSION_SECRET")
 if not app.config["SECRET_KEY"]:
@@ -259,6 +261,15 @@ def rag_owner_id():
 @app.errorhandler(RequestEntityTooLarge)
 def request_too_large(_error):
     return jsonify(error="Request is too large. Documents must be 20 MB or smaller."), 413
+
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    """Return unexpected errors as JSON (and print the traceback) instead of an HTML 500 page."""
+    if isinstance(e, HTTPException):
+        return e
+    traceback.print_exc()
+    return jsonify(error=f"{type(e).__name__}: {e}"), 500
 
 
 # ---------------------------------------------------------------- scoring
@@ -352,7 +363,9 @@ def load_data():
             if "Claim_ID" in df.columns:
                 df = df[df["Claim_ID"].notna() & (df["Claim_ID"].astype(str).str.strip() != "")].copy()
             df["Is_Fraudulent"] = pd.to_numeric(df["Is_Fraudulent"], errors="coerce").fillna(0).astype(int)
-            df["Claim_Date"] = pd.to_datetime(df["Claim_Date"], errors="coerce")
+            for c in DATE_COLUMNS:   # FIX: all date columns must be real dates, or edits crash
+                if c in df.columns:
+                    df[c] = pd.to_datetime(df[c], errors="coerce")
             for c in NUMERIC_DATA_COLUMNS:
                 if c in df.columns:
                     df[c] = pd.to_numeric(df[c], errors="coerce")
@@ -931,10 +944,55 @@ def _coerce_field_value(field, value):
             return True
         if s in {"false", "0", "no"}:
             return False
-        return s
+        return str(value).strip()   # FIX: keep original case (e.g. "In-Network")
 
     # 5. Strings
     return str(value).strip()
+
+
+
+def _match_dtype(col, value):
+    """Safely convert an incoming value to match its dataset column."""
+    if value is None or col not in DATA.columns:
+        return value
+
+    dtype = DATA[col].dtype
+
+    if pd.isna(value):
+        return None
+
+    if pd.api.types.is_bool_dtype(dtype):
+        if isinstance(value, str):
+            cleaned = value.strip().lower()
+            if cleaned in {"true", "1", "yes"}:
+                return True
+            if cleaned in {"false", "0", "no"}:
+                return False
+            raise ValueError(f"Field {col} must be true or false.")
+        return bool(value)
+
+    if pd.api.types.is_numeric_dtype(dtype):
+        try:
+            cleaned = str(value).replace(",", "").replace("$", "").strip()
+            number = float(cleaned)
+        except (ValueError, TypeError) as exc:
+            raise ValueError(
+                f"Field {col} must be numeric: {value!r}"
+            ) from exc
+
+        if not np.isfinite(number):
+            raise ValueError(f"Field {col} must be a finite number.")
+
+        if pd.api.types.is_integer_dtype(dtype):
+            if not number.is_integer():
+                raise ValueError(f"Field {col} must be an integer.")
+            return int(number)
+
+        return number
+
+    # Keep categorical fields and codes as text when their column is text.
+    return str(value).strip()
+
 
 
 def _sync_dataset_to_csv():
@@ -1019,14 +1077,67 @@ def patch_claim(row_id):
         coerced_updates = {}
         for k, v in payload.items():
             try:
-                coerced_updates[k] = _coerce_field_value(k, v)
+                coerced_updates[k] = _match_dtype(k, _coerce_field_value(k, v))
             except ValueError as ve:
                 return jsonify(error=str(ve)), 400
 
+        
+        # Validate every update before changing any dataset values.
+        prepared_updates = {}
+
         for k, v in coerced_updates.items():
+            dtype = DATA[k].dtype
+
+            if v is None:
+                prepared_updates[k] = pd.NA if (
+                    pd.api.types.is_numeric_dtype(dtype)
+                    or pd.api.types.is_datetime64_any_dtype(dtype)
+                ) else None
+                continue
+
+            try:
+                if pd.api.types.is_datetime64_any_dtype(dtype):
+                    converted = pd.to_datetime(v, errors="raise")
+                elif pd.api.types.is_bool_dtype(dtype):
+                    converted = v if isinstance(v, bool) else str(v).lower() in {
+                        "true", "1", "yes"
+                    }
+                elif pd.api.types.is_numeric_dtype(dtype):
+                    converted = pd.to_numeric(v, errors="raise")
+
+                    if not np.isfinite(float(converted)):
+                        raise ValueError("Value must be finite.")
+
+                    if pd.api.types.is_integer_dtype(dtype):
+                        if float(converted) != int(float(converted)):
+                            raise ValueError("Value must be an integer.")
+                        converted = int(converted)
+                    else:
+                        converted = float(converted)
+                else:
+                    converted = str(v).strip()
+
+                prepared_updates[k] = converted
+
+            except (ValueError, TypeError, OverflowError) as exc:
+                return jsonify(
+                    error=f"Invalid value for column '{k}': {exc}"
+                ), 400
+
+        # Apply the validated updates.
+        for k, v in prepared_updates.items():
             old_val = DATA.at[row_id, k]
+
+            if pd.isna(v) if not isinstance(v, (list, dict)) else False:
+                if pd.api.types.is_numeric_dtype(DATA[k].dtype):
+                    DATA[k] = DATA[k].astype("object")
+
             DATA.at[row_id, k] = v
             _append_edit_log(row_id, k, old_val, v)
+
+        _cache.clear()
+        _sync_dataset_to_csv()
+        claim_data = _serialise_claim_row(DATA.loc[row_id])
 
         _cache.clear()
         _sync_dataset_to_csv()
@@ -1200,11 +1311,12 @@ def post_claim():
                     val = raw_val
 
             try:
-                new_row[col] = _coerce_field_value(col, val)
+                new_row[col] = _match_dtype(col, _coerce_field_value(col, val))
             except ValueError as ve:
                 return jsonify(error=f"Invalid value for column '{col}': {ve}"), 400
 
-                new_row_id = int(DATA.index.max()) + 1 if len(DATA) else 0
+        # FIX: this line was indented inside the for-loop/except block, so new_row_id was never defined
+        new_row_id = int(DATA.index.max()) + 1 if len(DATA) else 0
         new_row["row_id"] = new_row_id
 
         new_df = pd.DataFrame([new_row], index=[new_row_id])

@@ -12,31 +12,18 @@
 }
 
 :root {
-  color-scheme: dark;
-
-  --bg-page: #10131A;
-  --bg-card: #171B24;
-  --bg-card-alt: #141821;
-  --bg-nav: #141821;
-  --border: #232A38;
-
-  --accent: #6E9BD6;
-  --accent-dark-1: #5E87BC;
-  --accent-dark-2: #4E72A2;
-  --accent-dark-3: #415E86;
-  --accent-dark-4: #344A69;
-
-  --text-primary: #E7EAF0;
-  --text-secondary: #8992A3;
-  --text-muted: #6E7585;
-
-  --success: #6FA883;
-  --success-bg: #1C2420;
-  --success-text: #90B99A;
-
-  --danger: #C4696A;
-  --danger-bg: #2A1E20;
-  --danger-text: #D59798;
+  color-scheme: light;
+  --bg-page: #F8F1DC;   --bg-card: #FFFBEE;   --bg-card-alt: #FBF5E3;
+  --bg-nav: #FFFBEE;    --border: #E8DDBC;
+  --accent: #8A4F62;    --accent-dark-1: #7A4557;  --accent-dark-2: #6A3C4B;
+  --accent-dark-3: #5A3340;  --accent-dark-4: #4A2A35;
+  --text-primary: #2D2628;   --text-secondary: #6A5F62;  --text-muted: #9A8F92;
+  --success: #4C8A5F;
+  --success-bg: #E3EFE6;
+  --success-text: #2F6B44;
+  --danger: #B5503F;
+  --danger-bg: #F6E3DE;
+  --danger-text: #8F3A2C;
 }
 
 @layer base {
@@ -73,12 +60,8 @@
     border-radius: 12px;
   }
 
-  .card-subtle-gradient {
-    background: linear-gradient(
-      180deg,
-      rgba(23, 27, 36, 1) 0%,
-      rgba(20, 24, 33, 1) 100%
-    );
+    .card-subtle-gradient {
+    background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-card-alt) 100%);
     border: 1px solid var(--border);
     border-radius: 12px;
   }
