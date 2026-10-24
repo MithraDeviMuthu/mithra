@@ -8,7 +8,7 @@ API claim edits are saved to `data/processed/health_claims_live.csv`; model trai
 ## Architecture & Structure
 
 - `api/app.py`: Flask API server providing fraud scoring, multi-class claim status prediction, portfolio analytics, provider risk tracking, loss ratio analysis, claim extraction, duplicate detection, and anomaly detection.
-- `api/claim_extraction.py`: Automated document extraction (PDF, DOCX, TXT, images) with regex/OCR, field extraction, and adjudication rule validation.
+- `api/claim_extraction.py`: Automated document extraction (PDF, DOCX, TXT) with regex-based field extraction and adjudication rule validation.
 - `api/duplicate_detection.py`: Exact and near-duplicate claim detection across multi-field similarity thresholds.
 - `api/anomaly_detection.py`: Statistical IQR outlier detection identifying excessive billing charges clustered by provider/service dimensions.
 - `ml/`: Random Forest model training for fraud risk scoring (held-out test ROC-AUC ~0.87) and claim status classification.
@@ -120,6 +120,6 @@ The frontend includes a secure client-side portal gate at `/`:
      - **Billing Outlier Anomalies**: Statistical IQR outlier detection clustered by Provider Type, Service Type, Admission Type, or Hospital ID (`POST /api/anomaly-detection`).
 
 9. **Claim extraction (`/claim-extraction`)**:
-   - File upload dropzone accepting PDF, DOCX, TXT, PNG, and JPG invoices/bills (`POST /api/claim-documents`).
+   - File upload dropzone accepting PDF, DOCX, and TXT invoices/bills (`POST /api/claim-documents`).
    - Ingestion feed showing upload timestamps, file sizes, and parsing status.
    - Extracted billing entities inspector displaying raw values, source snippets, and regex confidence metrics.

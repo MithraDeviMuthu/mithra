@@ -1440,7 +1440,7 @@ def list_claim_documents():
 def upload_claim_document():
     upload = request.files.get("file")
     if upload is None:
-        return jsonify(error="Choose a PDF, TXT, DOCX, or image file for claim extraction."), 400
+        return jsonify(error="Choose a PDF, TXT, or DOCX file for claim extraction."), 400
     content = upload.stream.read(MAX_FILE_BYTES + 1)
     try:
         document = CLAIM_STORE.upload_document(rag_owner_id(), upload.filename, content, upload.mimetype or "application/octet-stream")

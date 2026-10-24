@@ -213,7 +213,7 @@ export const ClaimExtraction: React.FC = () => {
                 Upload Medical Claim Document
               </h3>
               <p className="text-xs text-text-muted mt-1 max-w-xs mx-auto">
-                PDF, TXT, DOCX, PNG, or JPG files (max 10 MB). System will extract policy, amount, dates, and provider entities.
+                PDF, TXT, or DOCX files (max 10 MB). System will extract policy, amount, dates, and provider entities.
               </p>
             </div>
 
@@ -221,7 +221,7 @@ export const ClaimExtraction: React.FC = () => {
               type="file"
               ref={fileInputRef}
               onChange={handleFileUpload}
-              accept=".pdf,.txt,.docx,.png,.jpg,.jpeg"
+              accept=".pdf,.txt,.docx"
               className="hidden"
             />
 

@@ -11,9 +11,8 @@ from werkzeug.utils import secure_filename
 
 MAX_CLAIM_FILE_BYTES = 10 * 1024 * 1024
 
-# Keep all requested upload formats.
 ALLOWED_CLAIM_EXTENSIONS = {
-    ".pdf", ".txt", ".docx", ".png", ".jpg", ".jpeg"
+    ".pdf", ".txt", ".docx"
 }
 
 CLAIM_FIELD_NAMES = [
@@ -146,10 +145,6 @@ def _extract_date_role(text, patterns):
     return None, None, None, None
 
 
-# --------------------------------------------------
-# PDF extraction: embedded text only. NO OCR.
-# --------------------------------------------------
-
 def _text_from_pdf(path):
     try:
         from pypdf import PdfReader
@@ -177,10 +172,7 @@ def _text_from_pdf(path):
         merged = "\n\n".join(text_parts)
 
         if not merged.strip():
-            raise ClaimExtractionError(
-                "No readable text found. OCR is disabled for "
-                "scanned PDFs. The uploaded document is retained."
-            )
+            raise ClaimExtractionError("No readable text found in this PDF.")
 
         return merged
 
@@ -254,9 +246,6 @@ def _text_from_txt(path):
 
 
 # --------------------------------------------------
-# Supported file extraction. NO IMAGE OCR.
-# --------------------------------------------------
-
 def extract_claim_text(path, extension):
     extension = (extension or "").lower()
 
@@ -268,12 +257,6 @@ def extract_claim_text(path, extension):
 
     if extension == ".docx":
         return _text_from_docx(path)
-
-    if extension in {".png", ".jpg", ".jpeg"}:
-        raise ClaimExtractionError(
-            "Image uploaded successfully, but automatic text "
-            "extraction is disabled because OCR has been removed."
-        )
 
     raise ClaimExtractionError("Unsupported document type.")
 
@@ -642,11 +625,6 @@ class ClaimDocumentStore:
             connection.close()
             self._open_connections.discard(connection)
 
-    # --------------------------------------------------
-    # Upload all allowed files, without OCR.
-    # Image files and scanned PDFs are retained.
-    # --------------------------------------------------
-
     def upload_document(
         self,
         owner_id,
@@ -665,18 +643,13 @@ class ClaimDocumentStore:
         ):
             raise ClaimExtractionError(
                 "Unsupported document type. Upload PDF, TXT, "
-                "DOCX, PNG, JPG, or JPEG files."
+                "or DOCX files."
             )
 
         if not content:
             raise ClaimExtractionError(
                 "The selected document is empty."
             )
-
-        if extension == ".png" and not content.startswith(b"\x89PNG\r\n\x1a\n"):
-            raise ClaimExtractionError("The uploaded PNG file is invalid.")
-        if extension in {".jpg", ".jpeg"} and not content.startswith(b"\xff\xd8\xff"):
-            raise ClaimExtractionError("The uploaded JPEG file is invalid.")
 
         if len(content) > MAX_CLAIM_FILE_BYTES:
             raise ClaimExtractionError(
@@ -718,36 +691,8 @@ class ClaimDocumentStore:
 
             extraction_error = None
 
-            try:
-                text = extract_claim_text(path, extension)
-                raw_extraction = extract_claim_fields(text)
-
-            except ClaimExtractionError as exc:
-                # Do not delete uploaded image/scanned documents.
-                # Save unavailable fields when extraction is unsupported.
-                if extension in {".png", ".jpg", ".jpeg"}:
-                    extraction_error = (
-                        "File uploaded successfully. OCR is disabled; "
-                        "automatic image text extraction was skipped."
-                    )
-                elif extension == ".pdf" and (
-                    "OCR is disabled" in str(exc)
-                ):
-                    extraction_error = (
-                        "File uploaded successfully. This PDF has no "
-                        "readable text layer; OCR is disabled."
-                    )
-                else:
-                    raise
-
-                raw_extraction = {
-                    "fields": _build_field_template(),
-                    "source_snippets": {
-                        field: "unavailable"
-                        for field in CLAIM_FIELD_NAMES
-                    },
-                    "confidence": {},
-                }
+            text = extract_claim_text(path, extension)
+            raw_extraction = extract_claim_fields(text)
 
             validation_errors = validate_extracted_claim(
                 raw_extraction
